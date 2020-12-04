@@ -1,0 +1,40 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+
+[packages]
+django = "*"
+django-polymorphic = "*"
+gunicorn = "*"
+python-dateutil = "*"
+python-rapidjson = "*"
+django-crispy-forms = "*"
+django-guardian = "==2.1.0 "
+django-autoslug = "*"
+django-rest-framework-social-oauth2 = "*"
+django-admin-json-editor = "*"
+django-graphene-gis-extension = "~=0.2"
+pyopenssl = "*"
+django-oauth-toolkit = "*"
+requests = "*"
+django-cors-headers = "~=3.2.1"
+psycopg2-binary = "*"
+django-language-fields = "*"
+graphene-django = "*"
+graphene-file-upload = "*"
+serious-django-enums = "~=0.1"
+serious-django-graphene = "~=0.1.post2"
+serious-django-permissions = "~=0.13"
+serious-django-services = "~=0.2.post2"
+pillow = "*"
+boto3 = "*"
+django-storages="*"
+django-filter = "*"
+graphene-django-extras = "*"
+
+
+[requires]
+python_version = "3.8"
