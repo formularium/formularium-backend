@@ -1,61 +1,79 @@
 import graphene
-from graphene_django.types import DjangoObjectType
+from graphene import relay, ObjectType
+from graphene_django import DjangoObjectType
+from graphene_django.filter import DjangoFilterConnectionField
+from serious_django_graphene import get_user_from_info, FailableMutation, MutationExecutionException
+from graphql_relay.node.node import from_global_id
 
-from graphene_gis_extension import\
-    scalars as gis_scalars,\
-    input_types as gis_input_types
-
-from serious_django_graphene import get_user_from_info,\
+from serious_django_graphene import get_user_from_info, \
     FormMutation, MutationExecutionException
-
-# Import your Services (and maybe Forms) here.
-
-
-## Types
-# Define your Graphene types here. For types corresponding to Django models,
-# use DjangoObjectType:
-# http://docs.graphene-python.org/projects/django/en/latest/tutorial-plain/#hello-graphql-schema-and-object-types
-
+from graphql_relay.node.node import from_global_id
+from graphene_django.filter import DjangoFilterConnectionField
+from graphene.utils.str_converters import to_snake_case
 
 ## Queries
+from forms.models import Form, EncryptionKey
+from forms.services import FormService
+
+
+
+class FormNode(DjangoObjectType):
+    class Meta:
+        model = Form
+        filter_fields = ['id']
+        interfaces = (relay.Node,)
+
+    @classmethod
+    def get_queryset(cls, queryset, info):
+        return queryset.filter(active=True)
+
+
+class EncryptionKeyNode(DjangoObjectType):
+    class Meta:
+        model = EncryptionKey
+
+    @classmethod
+    def get_queryset(cls, queryset, info):
+        return queryset.filter(active=True)
+
+
+
 
 class Query(graphene.ObjectType):
-    """
-    This class includes all available queries for this app.
-    """
-    pass
-    # EXAMPLE:
-    # some_field = graphene.Field(
-    #    ...
-    # )
-    # def resolve_some_field(root, info):
-    #     user = get_user_from_info(info)
-    #     ...
+    # get a single form
+    form = relay.Node.Field(FormNode)
+    # get a list of available forms
+    all_forms = DjangoFilterConnectionField(FormNode)
+    # get public keys for form
+    public_keys_for_form = graphene.List(EncryptionKeyNode, form_id=graphene.ID(required=True))
+
+    def resolve_public_keys_for_form(self, info, form_id):
+        print(FormService.retrieve_public_keys_for_form(int(from_global_id(form_id)[1])))
+        return FormService.retrieve_public_keys_for_form(int(from_global_id(form_id)[1]))
 
 
-## Mutations
+class SubmitForm(FailableMutation):
+    content = graphene.String()
+    signature = graphene.String()
 
-# EXAMPLE:
-# class SomeFormBasedMutation(FormMutation):
-#    class Meta:
-#        form_class = SomeForm
+    class Arguments:
+        form_id = graphene.ID(required=True)
+        content = graphene.String(required=True)
 
-#    @classmethod
-#    def perform_mutate(cls, form, info):
-#        user = get_user_from_info(info)
-#        data = form.cleaned_data
-#        try:
-#            SomeService.do_something(user, data)
-#        except SomeService.exceptions as e:
-#            raise MutationExecutionException(str(e))
-#        return cls(...)
+    def mutate(self, info, form_id, content):
+        try:
+            result = FormService.submit(int(from_global_id(form_id)[1]), content)
+        except FormService.exceptions as e:
+            raise MutationExecutionException(str(e))
+        return SubmitForm(
+             success=True, **result
+        )
+
 
 
 class Mutation(graphene.ObjectType):
-    # some_mutation = SomeFormBasedMutation.Field(name=..., description=...)
-    pass
+    submit_form = SubmitForm.Field()
 
 
 ## Schema
-
 schema = graphene.Schema(query=Query, mutation=Mutation)

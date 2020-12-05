@@ -34,7 +34,8 @@ boto3 = "*"
 django-storages="*"
 django-filter = "*"
 graphene-django-extras = "*"
-
+python-gnupg = "*"
+pgpy = "*"
 
 [requires]
 python_version = "3.8"

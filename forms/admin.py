@@ -1,3 +1,7 @@
 from django.contrib import admin
 
-# Register your models here.
+from forms.models import EncryptionKey, Form, FormSubmission
+
+admin.site.register(EncryptionKey)
+admin.site.register(Form)
+admin.site.register(FormSubmission)

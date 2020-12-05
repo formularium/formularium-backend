@@ -14,8 +14,34 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.http import HttpResponse
+from django.urls import path, re_path, include
+from django.views.decorators.csrf import csrf_exempt
+
+from graphene_file_upload.django import FileUploadGraphQLView
+
+import json
+
+from forms.views import pgp_signature_key, home
+
+
+class PrivateGraphQLView(LoginRequiredMixin, FileUploadGraphQLView):
+    raise_exception = True
+
+    def dispatch(self, request, *args, **kwargs):
+        data = {
+            'status': 'unauthorized'
+        }
+        if not request.user.is_authenticated:
+            return HttpResponse(json.dumps(data), content_type='application/json')
+        return super(PrivateGraphQLView, self).dispatch(request, *args, **kwargs)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('graphql/', csrf_exempt(FileUploadGraphQLView.as_view(graphiql=True))),
+    path('pgp-signature-key.txt', pgp_signature_key),
+    path('', home),
+
 ]
