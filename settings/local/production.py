@@ -27,7 +27,7 @@ MEDIA_URL = '/media/'
 
 ALLOWED_HOSTS = ['*']
 
-CORS_ORIGIN_ALLOW_ALL = True
+CORS_ALLOW_ALL_ORIGINS = True
 
 AWS_EB_DEFAULT_REGION = "eu-central-1"
 # your aws access key id
