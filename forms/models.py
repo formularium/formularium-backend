@@ -41,6 +41,7 @@ class Form(models.Model):
 
 class FormSubmission(models.Model):
     data = models.TextField()
+    description = models.TextField(blank=True)
     signature = models.TextField()
     form = models.ForeignKey(Form, on_delete=models.CASCADE)
     submitted_at = models.DateTimeField(auto_now_add=True)
