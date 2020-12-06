@@ -21,6 +21,7 @@ class SignatureKey(models.Model):
 
     public_key = models.TextField()
     private_key = models.TextField()
+    subkey_id = models.CharField(max_length=255, blank=True)
     key_type = models.TextField(choices=SignatureKeyType.choices, max_length=20)
     active = models.BooleanField()
 

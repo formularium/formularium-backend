@@ -1,7 +1,9 @@
 from datetime import timedelta, datetime
 import json
+from django.conf import settings
 
 from django.contrib.auth.models import User
+from django.utils.translation import gettext_lazy as _
 
 from serious_django_services import Service
 import pgpy
@@ -9,12 +11,12 @@ import pgpy
 from forms.models import SignatureKey, Form, EncryptionKey, FormSubmission
 
 
-class FormServiceSpecificException(Exception):
+class FormServiceException(Exception):
     pass
 
 
 class FormService(Service):
-    service_exceptions = (FormServiceSpecificException,)
+    service_exceptions = (FormServiceException,)
 
     @classmethod
     def retrieve_form(cls, id: int) -> Form:
@@ -23,7 +25,12 @@ class FormService(Service):
         :param id: id of the form
         :return: the form object
         """
-        return Form.objects.get(pk=id, active=True)
+        try:
+            form = Form.objects.get(pk=id, active=True)
+        except Form.DoesNotExist:
+            raise FormServiceException(_("This form doesn't exist or isn't available publicly."))
+
+        return form
 
 
     @classmethod
@@ -40,7 +47,7 @@ class FormService(Service):
 
     @classmethod
     def submit(cls, form_id: int, content: str) -> dict:
-        """receives encrypted form data and signs them
+        """receives encrypted form data and signs it
           :param form_id: id of the form the content is for
           :param content: pgp encrypted form content
           :returns: object with signed content and the signature
@@ -49,23 +56,29 @@ class FormService(Service):
         form = FormService.retrieve_form(form_id)
 
         # load the signature key
-        key = pgpy.PGPKey()
-        key.parse(SignatureKey.objects.filter(active=True,
-                                              key_type=SignatureKey.SignatureKeyType.SECONDARY).get().private_key)
+        try:
+            # we currently   load the primary key b/c of a bug in pgpy
+            signature_key = SignatureKey.objects.filter(active=True,
+                                                        key_type=SignatureKey.SignatureKeyType.SECONDARY).get()
+            pkey = pgpy.PGPKey()
+            pkey.parse(signature_key.private_key)
+
+        except SignatureKey.DoesNotExist:
+            raise FormServiceException(_("Couldn't sign form because there are no signing keys available."))
 
         created_at = datetime.now()
-
-        # build the object that should be signed
         signed_content = json.dumps({
                 "form_data": content,
                 "timestamp": created_at.isoformat(),
-                "public_key_server": str(key.pubkey),
+                "public_key_server": str(pkey.pubkey),
                 "public_keys_recipients": [pubkey.public_key for
                                            pubkey in FormService.retrieve_public_keys_for_form(form.pk)],
                 "form_id": form.pk,
                 "form_name": form.name
         })
-        signature = key.sign(signed_content)
+        # build the object that should be signed
+        with pkey.subkeys[signature_key.subkey_id].unlock(settings.SECRET_KEY):
+            signature = pkey.subkeys[signature_key.subkey_id].sign(signed_content)
 
         FormSubmission.objects.create(signature=signature, data=content, submitted_at=created_at, form=form)
 

@@ -3,7 +3,7 @@ from django.core.management.base import BaseCommand
 from pgpy.constants import PubKeyAlgorithm, KeyFlags, HashAlgorithm, SymmetricKeyAlgorithm, CompressionAlgorithm
 import pgpy
 from datetime import timedelta
-
+from django.conf import settings
 from forms.models import SignatureKey
 
 
@@ -35,16 +35,18 @@ class Command(BaseCommand):
         subkey = pgpy.PGPKey.new(PubKeyAlgorithm.RSAEncryptOrSign, 4096)
         key.add_subkey(subkey, usage={KeyFlags.Sign})
 
-        # Before we add the new key we disable all other old key because there can be only one active signature key for now
         SignatureKey.objects.filter(active=True).update(active=False)
 
-        # TODO: storing the private key in the database is actually a bad idea. (better use TPMS, …)
-        SignatureKey.objects.create(public_key=str(key.pubkey), private_key=str(key),
-                                    key_type=SignatureKey.SignatureKeyType.PRIMARY, active=True)
-        SignatureKey.objects.create(public_key=str(subkey.pubkey), private_key=str(key),
-                                    key_type=SignatureKey.SignatureKeyType.SECONDARY, active=True)
-        print(str(subkey.pubkey))
-        # assuming we already have a primary key, we can generate a new key and add it as a subkey thusly:
+        # TODO: in the future we should generate a primary key which is the parent of the subkey. This primary should be protected
+        # with a password only known to the admin while the secondary key is unlocked with the django secret key
+        # this means that s.b. with only access to the database can steal the keys but unlock them
+
+        for key_id, registered_subkey in key.subkeys.items():
+            current_key = key
+            current_key.protect(settings.SECRET_KEY, SymmetricKeyAlgorithm.AES256, HashAlgorithm.SHA256)
+            SignatureKey.objects.create(public_key=str(current_key.pubkey), private_key=str(current_key), subkey_id=key_id,
+                                              key_type=SignatureKey.SignatureKeyType.SECONDARY, active=True)
+
 
 
 
