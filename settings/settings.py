@@ -140,6 +140,8 @@ USE_TZ = True
 
 SITE_ID = 1
 
+APPEND_SLASH = True
+
 
 # Graphene settings
 GRAPHENE = {

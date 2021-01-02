@@ -45,6 +45,7 @@ urlpatterns = [
     path('graphql/', csrf_exempt(FileUploadGraphQLView.as_view(graphiql=True))),
     path('pgp-signature-key.txt', pgp_signature_key),
     path(r'oauth/', include(('oauth.urls', 'oauth'), namespace='oauth2_provider')),
+    path('accounts/', include('django.contrib.auth.urls')),
     path('', home),
 
 ]
