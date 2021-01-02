@@ -26,6 +26,8 @@ import json
 
 from forms.views import pgp_signature_key, home
 
+from oauth2_provider import urls as oauth2_provider_urls
+
 
 class PrivateGraphQLView(LoginRequiredMixin, FileUploadGraphQLView):
     raise_exception = True
@@ -42,9 +44,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('graphql/', csrf_exempt(FileUploadGraphQLView.as_view(graphiql=True))),
     path('pgp-signature-key.txt', pgp_signature_key),
-    path("o/", include('oauth2_provider.urls', namespace='oauth2_provider')),
-    path(r'oauth/', include('oauth2_provider_jwt.urls', namespace='oauth2_provider_jwt')),
-    path('accounts/', include('django.contrib.auth.urls')),
+    path(r'oauth/', include(('oauth.urls', 'oauth'), namespace='oauth2_provider')),
     path('', home),
 
 ]

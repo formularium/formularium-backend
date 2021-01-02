@@ -17,7 +17,7 @@ django-autoslug = "*"
 django-rest-framework-social-oauth2 = "*"
 django-admin-json-editor = "*"
 django-graphene-gis-extension = "~=0.2"
-django-oauth-toolkit = "*"
+django-oauth-toolkit = {git = "git://github.com/jazzband/django-oauth-toolkit.git", ref = "295c065a3e5a14b777f1e56c8e36adedae0af461"}
 requests = "*"
 django-cors-headers = "*"
 psycopg2-binary = "*"
