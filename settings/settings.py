@@ -154,6 +154,14 @@ AUTHENTICATION_BACKENDS = (
     'oauth2_provider.backends.OAuth2Backend',
     'django.contrib.auth.backends.ModelBackend'
 )
+
+OAUTH2_PROVIDER = {
+    'SCOPES': {
+        'admin': 'Administrator',
+        'administrative-staff': 'Administrative Staff',
+    },
+}
+
 CRISPY_TEMPLATE_PACK = 'bootstrap4'
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
