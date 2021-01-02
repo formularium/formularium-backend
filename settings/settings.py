@@ -23,7 +23,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'jtclo%8p1pc-7ljld_g!5nf(ci@7ndtzpqt_x84uy7xoz$ve23'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = []
 
@@ -43,6 +43,11 @@ INSTALLED_APPS = [
     'graphene_django',
     'graphene_gis_extension',  # this is our own extension
 
+    'oauth2_provider',
+    'oauth2_provider_jwt',
+
+    'crispy_forms',
+
     # cors
     'corsheaders',
 
@@ -50,12 +55,14 @@ INSTALLED_APPS = [
     'languages',
 
     'forms',
+
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
+    'oauth2_provider.middleware.OAuth2TokenMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -71,7 +78,7 @@ ROOT_URLCONF = 'settings.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [str(BASE_DIR.joinpath('settings/templates'))],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -138,8 +145,13 @@ GRAPHENE = {
     'SCHEMA': 'settings.schema.schema'
 }
 
+STATICFILES_DIRS = ( 'settings/static/', )
 
-
+AUTHENTICATION_BACKENDS = (
+    'oauth2_provider.backends.OAuth2Backend',
+    'django.contrib.auth.backends.ModelBackend'
+)
+CRISPY_TEMPLATE_PACK = 'bootstrap4'
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
 

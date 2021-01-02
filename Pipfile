@@ -17,7 +17,6 @@ django-autoslug = "*"
 django-rest-framework-social-oauth2 = "*"
 django-admin-json-editor = "*"
 django-graphene-gis-extension = "~=0.2"
-pyopenssl = "*"
 django-oauth-toolkit = "*"
 requests = "*"
 django-cors-headers = "*"
@@ -36,6 +35,8 @@ django-filter = "*"
 graphene-django-extras = "*"
 python-gnupg = "*"
 pgpy = "*"
+django-oauth-toolkit-jwt = {git = "https://github.com/Humanitec/django-oauth-toolkit-jwt"}
+cryptography = "*"
 
 [requires]
 python_version = "3.8"

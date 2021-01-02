@@ -14,11 +14,6 @@ local_settings.py
 db.sqlite3
 media
 
-### Django static files ###
-static
-!static/css
-!static/images
-!static/js
 
 ### Intellij ###
 # Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm, CLion, Android Studio and Webstorm
