@@ -11,12 +11,18 @@ import json
 
 
 from oauth2_provider import urls as oauth2_provider_urls
-from oauth2_provider_jwt import urls as oauth2_provider_jwt_urls
+from oauth2_provider_jwt.views import TokenView, JWTAuthorizationView
+from oauth2_provider import views
+
 
 urlpatterns = [
-    path(r'oauth/', include('oauth2_provider_jwt.urls', namespace='oauth2_provider_jwt')),
-
+    path(r"authorize/", JWTAuthorizationView.as_view(), name="authorize"),
+    path(r"token/", TokenView.as_view(), name="token"),
+    path(r"revoke_token/", views.RevokeTokenView.as_view(),
+        name="revoke-token"),
+    path(r"introspect/", views.IntrospectTokenView.as_view(),
+        name="introspect"),
 ]
 
+urlpatterns += oauth2_provider_urls.management_urlpatterns
 urlpatterns += oauth2_provider_urls.oidc_urlpatterns
-urlpatterns += oauth2_provider_jwt_urls.urlpatterns
