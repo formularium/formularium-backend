@@ -120,3 +120,12 @@ gsNj/IzY2AnvIp4+rcozzqaOt10KvdItEO9JWOEdqNI8fJ+M6MREFLg+driUtw4C
 ODTozIIfl6GpJzbHxSWcKdmp348IogXHFd8TQgdXEtO1jQ3Npo82IIcCAwEAAQ==
 -----END RSA PUBLIC KEY-----
 """
+
+
+
+OAUTH2_PROVIDER = {
+    'SCOPES': {
+        'admin': 'Administrator',
+        'administrative-staff': 'Administrative Staff',
+    },
+}

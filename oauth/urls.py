@@ -14,8 +14,9 @@ from oauth2_provider import urls as oauth2_provider_urls
 from oauth2_provider_jwt import urls as oauth2_provider_jwt_urls
 
 urlpatterns = [
+    path(r'oauth/', include('oauth2_provider_jwt.urls', namespace='oauth2_provider_jwt')),
+
 ]
 
-urlpatterns += oauth2_provider_urls.management_urlpatterns
 urlpatterns += oauth2_provider_urls.oidc_urlpatterns
 urlpatterns += oauth2_provider_jwt_urls.urlpatterns
