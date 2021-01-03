@@ -161,7 +161,7 @@ AUTHENTICATION_BACKENDS = (
 JWT_ISSUER = 'FORMULARIUM'
 JWT_ENABLED = True
 JWT_ID_ATTRIBUTE = 'email'
-JWT_PRIVATE_KEY_RSA = """
+JWT_PRIVATE_KEY_FORMULARIUM = """
 -----BEGIN RSA PRIVATE KEY-----
 MIIJJwIBAAKCAgEApZDxqhI8O93V0LGwAiQqYR1n2PPeby7DbvrE3yd4zWgw5Rxe
 3SnmzXH2t+Q0O3OSsH5y19ZeDgfyRX74REr+bPW0Mkg99POAJWmXZF6XyWEKWETJ
@@ -238,7 +238,6 @@ OAUTH2_PROVIDER = {
         'admin': 'Administrator',
         'administrative-staff': 'Administrative Staff',
     },
-    "OAUTH2_SERVER_CLASS": "oauth.oauth_provider_server.Oauth2JWTTokenServer"
 
 }
 
