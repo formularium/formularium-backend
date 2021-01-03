@@ -1,27 +1,21 @@
-from django.contrib import admin
-from django.urls import path, include
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import HttpResponse
+
 from django.urls import path, re_path, include
-from django.views.decorators.csrf import csrf_exempt
-
-from graphene_file_upload.django import FileUploadGraphQLView
-
-import json
 
 
 from oauth2_provider import urls as oauth2_provider_urls
-from oauth2_provider_jwt.views import TokenView, JWTAuthorizationView
-from oauth2_provider import views
+import oauth2_provider.views as oauth2_views
+from rest_framework_social_oauth2.views import invalidate_sessions
 
+
+from oauth.views import Oauth2ConvertJWTTokenView
 
 urlpatterns = [
-    path(r"authorize/", JWTAuthorizationView.as_view(), name="authorize"),
-    path(r"token/", TokenView.as_view(), name="token"),
-    path(r"revoke_token/", views.RevokeTokenView.as_view(),
-        name="revoke-token"),
-    path(r"introspect/", views.IntrospectTokenView.as_view(),
-        name="introspect"),
+    path("authorize/", oauth2_views.AuthorizationView.as_view(template_name="oauth/authorization.html"),
+         name="authorize"),
+    path("token/", oauth2_views.TokenView.as_view(), name="token"),
+    path("convert-token/", Oauth2ConvertJWTTokenView.as_view(), name="convert_token"),
+    path("revoke-token/", oauth2_views.RevokeTokenView.as_view(), name="revoke_token"),
+    path("invalidate-sessions/", invalidate_sessions, name="invalidate_sessions"),
 ]
 
 urlpatterns += oauth2_provider_urls.management_urlpatterns

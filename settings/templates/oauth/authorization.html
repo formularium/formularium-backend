@@ -1,22 +1,12 @@
 {% extends "oauth/auth_base.html" %}
 {% load static %}
 
-{% block head %}
-    <style>
-        body  {
-            background-image: url("{% static 'images/login-screen.jpg' %}");
-            background-repeat: no-repeat;
-            background-position: center top;
-            background-size: cover;
-        }
-    </style>
-{% endblock %}
 
 {% load i18n %}
 {% block content %}
         <div class="row justify-content-center">
-          <div class="col-md-6">
-              <div class="col-md-12 dashport-card">
+          <div class="col-6">
+              <div class="col-10">
         {% if not error %}
             <form id="authorizationForm" method="post">
                 <h1>{{ application.application.name }} Login</h1>
