@@ -35,7 +35,7 @@ class Form(models.Model):
     xml_code = models.TextField()
     js_code = models.TextField()
     active = models.BooleanField()
-    teams = models.ManyToManyField(Group)  # teams that can decrypt the submissions
+    teams = models.ManyToManyField(Group, related_name='forms')  # teams that can decrypt the submissions
 
     def __str__(self):
         return self.name

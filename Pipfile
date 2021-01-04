@@ -37,6 +37,8 @@ python-gnupg = "*"
 pgpy = "*"
 django-oauth-toolkit-jwt = {git = "https://github.com/Humanitec/django-oauth-toolkit-jwt"}
 cryptography = "*"
+graphene-permissions = "*"
+django-graphene-permissions = "*"
 
 [requires]
 python_version = "3.8"

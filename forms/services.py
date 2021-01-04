@@ -83,3 +83,20 @@ class FormService(Service):
         FormSubmission.objects.create(signature=signature, data=content, submitted_at=created_at, form=form)
 
         return {"content":  signed_content, "signature": signature}
+
+
+
+class FormReceiverService(Service):
+    service_exceptions = (FormServiceException,)
+
+    @classmethod
+    def retrieve_accessible_forms(cls,user):
+        return Form.objects.filter(teams__in=user.groups.all())
+
+    @classmethod
+    def retrieve_submitted_forms(cls, user):
+        accessible_forms = cls.retrieve_accessible_forms(user)
+        return FormSubmission.objects.filter(form__in=accessible_forms)
+
+
+

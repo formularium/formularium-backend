@@ -43,6 +43,11 @@ INSTALLED_APPS = [
     'graphene_django',
     'graphene_gis_extension',  # this is our own extension
 
+    # Serious Django
+    'serious_django_services',
+    'serious_django_permissions',
+    'serious_django_graphene',
+
     'oauth2_provider',
     'oauth2_provider_jwt',
 
@@ -153,8 +158,16 @@ STATICFILES_DIRS = ( 'settings/static/', )
 
 AUTHENTICATION_BACKENDS = (
     'oauth2_provider.backends.OAuth2Backend',
-    'django.contrib.auth.backends.ModelBackend'
+    'django.contrib.auth.backends.ModelBackend',
+    'serious_django_permissions.permissions.PermissionModelBackend',
+
 )
+
+
+
+# Serious Django configuration
+DEFAULT_GROUPS_MODULE = 'settings.default_groups'
+
 
 
 # TODO: move this to config
