@@ -16,8 +16,8 @@ from graphene.utils.str_converters import to_snake_case
 
 ## Queries
 from forms.models import Form, EncryptionKey, FormSubmission
-from forms.permissions import CanRetrieveFormSubmissionsPermission
-from forms.services import FormService, FormReceiverService
+from forms.permissions import CanRetrieveFormSubmissionsPermission, CanAddEncryptionKeyPermission
+from forms.services import FormService, FormReceiverService, EncryptionKeyService
 from graphene_permissions.permissions import AllowAuthenticated
 
 
@@ -102,9 +102,29 @@ class SubmitForm(FailableMutation):
         )
 
 
+class SubmitEncryptionKey(FailableMutation):
+
+    encryption_key = graphene.Field(EncryptionKeyNode)
+
+    class Arguments:
+        public_key = graphene.String(required=True)
+
+    @permissions_checker([IsAuthenticated, CanAddEncryptionKeyPermission])
+    def mutate(self, info, public_key):
+        user = get_user_from_info(info)
+        try:
+            result = EncryptionKeyService.add_key(user, public_key)
+        except EncryptionKeyService.exceptions as e:
+            raise MutationExecutionException(str(e))
+        return SubmitEncryptionKey(
+             success=True, encryption_key=result
+        )
+
+
 
 class Mutation(graphene.ObjectType):
     submit_form = SubmitForm.Field()
+    submit_encryption_key = SubmitEncryptionKey.Field()
 
 
 ## Schema

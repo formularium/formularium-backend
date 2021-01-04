@@ -12,7 +12,7 @@ from forms.services import FormService, FormServiceException
 from ...management.commands import create_signature_key
 from ..utils import generate_test_keypair
 
-class UserProfileServiceTest(TestCase):
+class FormReceiverServiceTest(TestCase):
 
     def setUp(self):
         self.user = get_user_model().objects.create(username="admin")

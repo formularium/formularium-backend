@@ -2,7 +2,7 @@ from datetime import timedelta, datetime
 import json
 from django.conf import settings
 
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, AbstractUser
 from django.utils.translation import gettext_lazy as _
 
 from serious_django_services import Service
@@ -32,7 +32,6 @@ class FormService(Service):
 
         return form
 
-
     @classmethod
     def retrieve_public_keys_for_form(cls, form_id: int) -> [EncryptionKey]:
         """
@@ -43,7 +42,6 @@ class FormService(Service):
         form = cls.retrieve_form(form_id)
         return EncryptionKey.objects.filter(
             user__in=User.objects.filter(groups__in=form.teams.all()), active=True)
-
 
     @classmethod
     def submit(cls, form_id: int, content: str) -> dict:
@@ -68,13 +66,13 @@ class FormService(Service):
 
         created_at = datetime.now()
         signed_content = json.dumps({
-                "form_data": content,
-                "timestamp": created_at.isoformat(),
-                "public_key_server": str(pkey.pubkey),
-                "public_keys_recipients": [pubkey.public_key for
-                                           pubkey in FormService.retrieve_public_keys_for_form(form.pk)],
-                "form_id": form.pk,
-                "form_name": form.name
+            "form_data": content,
+            "timestamp": created_at.isoformat(),
+            "public_key_server": str(pkey.pubkey),
+            "public_keys_recipients": [pubkey.public_key for
+                                       pubkey in FormService.retrieve_public_keys_for_form(form.pk)],
+            "form_id": form.pk,
+            "form_name": form.name
         })
         # build the object that should be signed
         with pkey.subkeys[signature_key.subkey_id].unlock(settings.SECRET_KEY):
@@ -82,21 +80,25 @@ class FormService(Service):
 
         FormSubmission.objects.create(signature=signature, data=content, submitted_at=created_at, form=form)
 
-        return {"content":  signed_content, "signature": signature}
-
+        return {"content": signed_content, "signature": signature}
 
 
 class FormReceiverService(Service):
     service_exceptions = (FormServiceException,)
 
     @classmethod
-    def retrieve_accessible_forms(cls,user):
+    def retrieve_accessible_forms(cls, user: AbstractUser) -> [Form]:
         return Form.objects.filter(teams__in=user.groups.all())
 
     @classmethod
-    def retrieve_submitted_forms(cls, user):
+    def retrieve_submitted_forms(cls, user: AbstractUser) -> [FormSubmission]:
         accessible_forms = cls.retrieve_accessible_forms(user)
         return FormSubmission.objects.filter(form__in=accessible_forms)
 
 
+class EncryptionKeyService(Service):
+    service_exceptions = (FormServiceException,)
 
+    @classmethod
+    def add_key(cls, user: AbstractUser, public_key: str) -> EncryptionKey:
+        return EncryptionKey.objects.create(user=user, public_key=public_key, active=True)
