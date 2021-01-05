@@ -21,7 +21,7 @@ class TokenView(views.TokenView):
         if payload_enricher:
             fn = import_string(payload_enricher)
             extra_data = fn(request)
-        extra_data["access_token"] = request["access_token"]
+        extra_data["access_token"] = content["access_token"]
 
         if 'scope' in content:
             extra_data['scope'] = content['scope']
