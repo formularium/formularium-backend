@@ -5,8 +5,9 @@ from django.urls import path, re_path, include
 from oauth2_provider import urls as oauth2_provider_urls
 import oauth2_provider.views as oauth2_views
 from oauth2_provider.views import IntrospectTokenView
-from oauth2_provider_jwt.views import TokenView
 from rest_framework_social_oauth2.views import invalidate_sessions
+
+from oauth.views import TokenView
 
 urlpatterns = [
     path("authorize/", oauth2_views.AuthorizationView.as_view(template_name="oauth/authorization.html"),
