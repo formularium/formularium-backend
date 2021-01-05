@@ -157,7 +157,7 @@ GRAPHENE = {
 STATICFILES_DIRS = ( 'settings/static/', )
 
 AUTHENTICATION_BACKENDS = (
-    'oauth2_provider.backends.OAuth2Backend',
+    'oauth.oauth_backend.OAuth2Backend',
     'django.contrib.auth.backends.ModelBackend',
     'serious_django_permissions.permissions.PermissionModelBackend',
 
@@ -229,7 +229,7 @@ ch3Z68wWkLXmLCNvfEPgbB0J83avh8DpwMQamRgh3auUvO1Phuyilge1Bw==
 """
 
 
-JWT_PUBLIC_KEY = """
+JWT_PUBLIC_KEY_FORMULARIUM = """
 -----BEGIN RSA PUBLIC KEY-----
 MIICCgKCAgEApZDxqhI8O93V0LGwAiQqYR1n2PPeby7DbvrE3yd4zWgw5Rxe3Snm
 zXH2t+Q0O3OSsH5y19ZeDgfyRX74REr+bPW0Mkg99POAJWmXZF6XyWEKWETJ4I+/
@@ -252,7 +252,6 @@ OAUTH2_PROVIDER = {
         'admin': 'Administrator',
         'administrative-staff': 'Administrative Staff',
     },
-'OIDC_RSA_PRIVATE_KEY': JWT_PRIVATE_KEY_FORMULARIUM
 
 }
 
