@@ -228,7 +228,6 @@ ch3Z68wWkLXmLCNvfEPgbB0J83avh8DpwMQamRgh3auUvO1Phuyilge1Bw==
 -----END RSA PRIVATE KEY-----
 """
 
-OIDC_RSA_PRIVATE_KEY = JWT_PRIVATE_KEY_FORMULARIUM
 
 JWT_PUBLIC_KEY = """
 -----BEGIN RSA PUBLIC KEY-----
@@ -253,6 +252,7 @@ OAUTH2_PROVIDER = {
         'admin': 'Administrator',
         'administrative-staff': 'Administrative Staff',
     },
+'OIDC_RSA_PRIVATE_KEY': JWT_PRIVATE_KEY_FORMULARIUM
 
 }
 
