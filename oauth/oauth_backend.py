@@ -31,13 +31,13 @@ class OAuth2Backend:
                 except jwt.InvalidTokenError:
                     raise exceptions.AuthenticationFailed()
 
-            uri, http_method, body, headers = OAuthLibCore._extract_params(request)
-            headers["HTTP_AUTHORIZATION"] = " ".join([hdr[0], payload["access_token"]])
-            headers["Authorization"] = " ".join([hdr[0], payload["access_token"]])
+                uri, http_method, body, headers = OAuthLibCore._extract_params(request)
+                headers["HTTP_AUTHORIZATION"] = " ".join([hdr[0], payload["access_token"]])
+                headers["Authorization"] = " ".join([hdr[0], payload["access_token"]])
 
-            valid, r = OAuthLibCore.server.verify_request(uri, http_method, body, headers, scopes=[])
-            if valid:
-                return r.user
+                valid, r = OAuthLibCore.server.verify_request(uri, http_method, body, headers, scopes=[])
+                if valid:
+                    return r.user
         return None
 
     def get_user(self, user_id):
