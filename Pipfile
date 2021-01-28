@@ -3,8 +3,6 @@ name = "pypi"
 url = "https://pypi.org/simple"
 verify_ssl = true
 
-[dev-packages]
-
 [packages]
 django = "*"
 django-polymorphic = "*"
@@ -39,6 +37,7 @@ django-oauth-toolkit-jwt = {git = "https://github.com/LilithWittmann/django-oaut
 cryptography = "*"
 graphene-permissions = "*"
 django-graphene-permissions = "*"
+packaging = "*"
 
 [requires]
 python_version = "3.8"
