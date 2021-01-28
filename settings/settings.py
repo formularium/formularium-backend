@@ -49,7 +49,6 @@ INSTALLED_APPS = [
     'serious_django_graphene',
 
     'oauth2_provider',
-    'oauth2_provider_jwt',
 
     'crispy_forms',
 

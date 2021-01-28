@@ -35,7 +35,7 @@ django-filter = "*"
 graphene-django-extras = "*"
 python-gnupg = "*"
 pgpy = "*"
-django-oauth-toolkit-jwt = {git = "https://github.com/Humanitec/django-oauth-toolkit-jwt"}
+django-oauth-toolkit-jwt = {git = "https://github.com/LilithWittmann/django-oauth-toolkit-jwt/"}
 cryptography = "*"
 graphene-permissions = "*"
 django-graphene-permissions = "*"
