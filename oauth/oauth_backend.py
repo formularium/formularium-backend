@@ -29,9 +29,7 @@ class OAuth2Backend:
                     msg = 'Error decoding signature.'
                     raise exceptions.NotAuthenticated(msg)
                 except (jwt.InvalidTokenError,
-                        jwt.ExpiredSignatureError,
-                        jwt.InvalidSignatureError,
-                        jwt.InvalidTokenError):
+                        jwt.InvalidSignatureError):
                     raise exceptions.NotAuthenticated()
 
                 uri, http_method, body, headers = OAuthLibCore._extract_params(request)
