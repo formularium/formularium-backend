@@ -23,6 +23,7 @@ from django.views.decorators.csrf import csrf_exempt
 from graphene_file_upload.django import FileUploadGraphQLView
 
 import json
+from rest_framework.exceptions import NotAuthenticated
 
 from forms.views import pgp_signature_key, home
 
@@ -36,8 +37,12 @@ class PrivateGraphQLView(LoginRequiredMixin, FileUploadGraphQLView):
         data = {
             'status': 'unauthorized'
         }
-        if not request.user.is_authenticated:
-            return HttpResponse(json.dumps(data), content_type='application/json')
+        try:
+            if not request.user.is_authenticated:
+                return HttpResponse(json.dumps(data), content_type='application/json')
+        except Exception as e:
+            return NotAuthenticated()
+
         return super(PrivateGraphQLView, self).dispatch(request, *args, **kwargs)
 
 urlpatterns = [
