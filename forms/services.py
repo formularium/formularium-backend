@@ -101,4 +101,4 @@ class EncryptionKeyService(Service):
 
     @classmethod
     def add_key(cls, user: AbstractUser, public_key: str) -> EncryptionKey:
-        return EncryptionKey.objects.create(user=user, public_key=public_key, active=True)
+        return EncryptionKey.objects.create(user=user, public_key=public_key, active=False)

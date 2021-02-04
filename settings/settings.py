@@ -58,8 +58,8 @@ INSTALLED_APPS = [
     # i18n language model field
     'languages',
 
-    'forms',
     'oauth',
+    'forms',
 
 ]
 
@@ -134,6 +134,12 @@ AUTH_PASSWORD_VALIDATORS = [
 # https://docs.djangoproject.com/en/3.1/topics/i18n/
 
 LANGUAGE_CODE = 'en-us'
+
+from django.utils.translation import ugettext_lazy as _
+LANGUAGES = (
+    ('en-US', _('English')),
+    ('de-DE', _('German')),
+)
 
 TIME_ZONE = 'UTC'
 

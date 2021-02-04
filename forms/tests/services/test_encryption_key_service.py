@@ -36,5 +36,9 @@ class EncryptionKeyServiceTest(TestCase):
 
     def test_accessible_forms(self):
         self.assertEqual(len(FormService.retrieve_public_keys_for_form(self.form.id)), 1)
-        EncryptionKeyService.add_key(self.user, "keeey")
-        self.assertEqual(len(FormService.retrieve_public_keys_for_form(self.form.id)), 2)
+        key = EncryptionKeyService.add_key(self.user, "keeey")
+        self.assertEqual(len(FormService.retrieve_public_keys_for_form(self.form.id)), 1)
+        # TODO service for activating keys
+        key.active = True
+        key.save()
+
