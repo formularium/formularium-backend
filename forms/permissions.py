@@ -26,3 +26,15 @@ class CanAddEncryptionKeyPermission(Permission):
     @staticmethod
     def has_object_permission(context, obj):
         return True
+
+class CanActivateEncryptionKeyPermission(Permission):
+    model = EncryptionKey
+    description = 'can activate a new encryption key'
+
+    @staticmethod
+    def has_permission(context):
+        return context.user.has_perm(CanActivateEncryptionKeyPermission)
+
+    @staticmethod
+    def has_object_permission(context, obj):
+        return True

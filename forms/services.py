@@ -9,6 +9,7 @@ from serious_django_services import Service
 import pgpy
 
 from forms.models import SignatureKey, Form, EncryptionKey, FormSubmission
+from forms.permissions import CanActivateEncryptionKeyPermission, CanAddEncryptionKeyPermission
 
 
 class FormServiceException(Exception):
@@ -101,4 +102,20 @@ class EncryptionKeyService(Service):
 
     @classmethod
     def add_key(cls, user: AbstractUser, public_key: str) -> EncryptionKey:
+        if not user.has_perm(CanAddEncryptionKeyPermission):
+            raise PermissionError("You are not allowed to add a form key")
         return EncryptionKey.objects.create(user=user, public_key=public_key, active=False)
+
+    @classmethod
+    def activate_key(cls, user: AbstractUser, public_key_id) -> EncryptionKey:
+        if not user.has_perm(CanActivateEncryptionKeyPermission):
+            raise PermissionError("You are not allowed to activate this form key")
+        public_key = EncryptionKey.objects.get(id=public_key_id)
+
+        if public_key.active == True:
+            raise FormServiceException("This public key is already active.")
+
+        public_key.active = True
+        public_key.save()
+
+        return public_key
