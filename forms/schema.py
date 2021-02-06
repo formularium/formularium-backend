@@ -16,7 +16,7 @@ from graphene.utils.str_converters import to_snake_case
 
 ## Queries
 from forms.models import Form, EncryptionKey, FormSubmission, FormSchema
-from forms.permissions import CanRetrieveFormSubmissionsPermission, CanAddEncryptionKeyPermission
+from forms.permissions import CanRetrieveFormSubmissionsPermission, CanAddEncryptionKeyPermission, CanEditFormPermission
 from forms.services import FormService, FormReceiverService, EncryptionKeyService, FormSchemaService
 from graphene_permissions.permissions import AllowAuthenticated
 
@@ -127,11 +127,11 @@ class CreateFormSchema(FailableMutation):
     form_schema = graphene.Field(FormSchemaNone)
 
     class Arguments:
-        schema = graphene.Field(graphene.String, required=True)
-        key = graphene.Field(graphene.String, required=True)
+        schema = graphene.String(required=True)
+        key = graphene.String(required=True)
         form_id = graphene.ID(required=True)
 
-    @permissions_checker([IsAuthenticated, CanAddEncryptionKeyPermission])
+    @permissions_checker([IsAuthenticated, CanEditFormPermission])
     def mutate(self, info, schema, key, form_id):
         user = get_user_from_info(info)
         try:
@@ -147,10 +147,10 @@ class UpdateFormSchema(FailableMutation):
     form_schema = graphene.Field(FormSchemaNone)
 
     class Arguments:
-        schema_id = graphene.Field(graphene.String, required=True)
-        schema = graphene.Field(graphene.String, required=True)
+        schema_id = graphene.ID(required=True)
+        schema = graphene.String(required=True)
 
-    @permissions_checker([IsAuthenticated, CanAddEncryptionKeyPermission])
+    @permissions_checker([IsAuthenticated, CanEditFormPermission])
     def mutate(self, info, schema_id, schema):
         user = get_user_from_info(info)
         try:
