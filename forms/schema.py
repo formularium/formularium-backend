@@ -15,9 +15,9 @@ from graphene_django.filter import DjangoFilterConnectionField
 from graphene.utils.str_converters import to_snake_case
 
 ## Queries
-from forms.models import Form, EncryptionKey, FormSubmission
+from forms.models import Form, EncryptionKey, FormSubmission, FormSchema
 from forms.permissions import CanRetrieveFormSubmissionsPermission, CanAddEncryptionKeyPermission
-from forms.services import FormService, FormReceiverService, EncryptionKeyService
+from forms.services import FormService, FormReceiverService, EncryptionKeyService, FormSchemaService
 from graphene_permissions.permissions import AllowAuthenticated
 
 
@@ -32,8 +32,14 @@ class FormNode(DjangoObjectType):
         return queryset.filter(active=True)
 
 
-class FormSubmissionNode(PermissionDjangoObjectType):
+class FormSchemaNone(DjangoObjectType):
+    class Meta:
+        model = FormSchema
+        filter_fields = ['id']
+        interfaces = (relay.Node,)
 
+
+class FormSubmissionNode(PermissionDjangoObjectType):
     class Meta:
         model = FormSubmission
         filter_fields = ['id']
@@ -60,8 +66,6 @@ class EncryptionKeyNode(DjangoObjectType):
         return queryset.filter(active=True)
 
 
-
-
 class Query(graphene.ObjectType):
     # get a single form
     form = relay.Node.Field(FormNode)
@@ -83,7 +87,6 @@ class Query(graphene.ObjectType):
         return FormReceiverService.retrieve_submitted_forms(user)
 
 
-
 class SubmitForm(FailableMutation):
     content = graphene.String()
     signature = graphene.String()
@@ -98,12 +101,11 @@ class SubmitForm(FailableMutation):
         except FormService.exceptions as e:
             raise MutationExecutionException(str(e))
         return SubmitForm(
-             success=True, **result
+            success=True, **result
         )
 
 
 class SubmitEncryptionKey(FailableMutation):
-
     encryption_key = graphene.Field(EncryptionKeyNode)
 
     class Arguments:
@@ -117,14 +119,54 @@ class SubmitEncryptionKey(FailableMutation):
         except EncryptionKeyService.exceptions as e:
             raise MutationExecutionException(str(e))
         return SubmitEncryptionKey(
-             success=True, encryption_key=result
+            success=True, encryption_key=result
         )
 
+
+class CreateFormSchema(FailableMutation):
+    form_schema = graphene.Field(FormSchemaNone)
+
+    class Arguments:
+        schema = graphene.Field(graphene.String, required=True)
+        key = graphene.Field(graphene.String, required=True)
+        form_id = graphene.ID(required=True)
+
+    @permissions_checker([IsAuthenticated, CanAddEncryptionKeyPermission])
+    def mutate(self, info, schema, key, form_id):
+        user = get_user_from_info(info)
+        try:
+            result = FormSchemaService.create_form_schema(user, key, int(from_global_id(form_id)[1]), schema)
+        except FormSchemaService.exceptions as e:
+            raise MutationExecutionException(str(e))
+        return SubmitEncryptionKey(
+            success=True, form_schema=result
+        )
+
+
+class UpdateFormSchema(FailableMutation):
+    form_schema = graphene.Field(FormSchemaNone)
+
+    class Arguments:
+        schema_id = graphene.Field(graphene.String, required=True)
+        schema = graphene.Field(graphene.String, required=True)
+
+    @permissions_checker([IsAuthenticated, CanAddEncryptionKeyPermission])
+    def mutate(self, info, schema_id, schema):
+        user = get_user_from_info(info)
+        try:
+            result = FormSchemaService.update_form_schema(user, schema_id, schema)
+        except FormSchemaService.exceptions as e:
+            raise MutationExecutionException(str(e))
+        return SubmitEncryptionKey(
+            success=True, form_schema=result
+        )
 
 
 class Mutation(graphene.ObjectType):
     submit_form = SubmitForm.Field()
     submit_encryption_key = SubmitEncryptionKey.Field()
+    create_form_schema = CreateFormSchema.Field()
+    update_form_schema = UpdateFormSchema.Field()
 
 
 ## Schema

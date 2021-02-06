@@ -8,7 +8,7 @@ from django.utils.translation import gettext_lazy as _
 from serious_django_services import Service
 import pgpy
 
-from forms.models import SignatureKey, Form, EncryptionKey, FormSubmission
+from forms.models import SignatureKey, Form, EncryptionKey, FormSubmission, FormSchema
 from forms.permissions import CanActivateEncryptionKeyPermission, CanAddEncryptionKeyPermission
 
 
@@ -84,15 +84,80 @@ class FormService(Service):
         return {"content": signed_content, "signature": signature}
 
 
+class FormSchemaService(Service):
+    service_exceptions = (FormServiceException,)
+
+    @classmethod
+    def _validate_json_schema(cls, schema: str):
+        """
+        validate if the given string is a valid json schema form
+        :param schema: the json schema string
+        :return: True if it's valid
+        """
+        try:
+            json.loads(schema)
+        except json.JSONDecodeError:
+            raise FormServiceException("Not a valid json schema form!")
+
+        return True
+
+    @classmethod
+    def create_form_schema(cls, user: AbstractUser, key: str, form_id: int, schema: str):
+        """
+        create a new form section/schema
+        :param user: the user calling the service
+        :param key: the key this schema uses
+        :param form_id: id of the form that uses this schema
+        :param schema: the schema object itself
+        :return: the newly created schema object
+        """
+        if not user.has_perm(CanActivateEncryptionKeyPermission):
+            raise PermissionError("You are not allowed to create this form schema.")
+
+        form = Form.objects.get(pk=form_id)
+        cls._validate_json_schema(schema)
+        schema = FormSchema.objects.create(key=key, form=form, schema=schema)
+        schema.save()
+        return schema
+
+    @classmethod
+    def update_form_schema(cls, user: AbstractUser, schema_id: int, schema: str):
+        """
+        :param user: the user calling the service
+        :param schema_id: id of the schema that should be updated
+        :param schema: the schema object itself
+        :return: the updated schema object
+        """
+        if not user.has_perm(CanActivateEncryptionKeyPermission):
+            raise PermissionError("You are not allowed to create this form schema.")
+
+        cls._validate_json_schema(schema)
+
+        form_schema = FormSchema.objects.get(pk=schema_id)
+        form_schema.schema = schema
+        form_schema.save()
+
+        return form_schema
+
 class FormReceiverService(Service):
     service_exceptions = (FormServiceException,)
 
     @classmethod
     def retrieve_accessible_forms(cls, user: AbstractUser) -> [Form]:
+        """
+        Retrieve a list of forms that user can decrypt
+        :param user: the user calling the service
+        :return: a list of accessible form objects for this user
+        """
         return Form.objects.filter(teams__in=user.groups.all())
 
     @classmethod
     def retrieve_submitted_forms(cls, user: AbstractUser) -> [FormSubmission]:
+        """
+        retrieve all submitted form obj
+        :param user: the user calling the service
+        :return: a list of available forms
+        """
         accessible_forms = cls.retrieve_accessible_forms(user)
         return FormSubmission.objects.filter(form__in=accessible_forms)
 
@@ -102,12 +167,24 @@ class EncryptionKeyService(Service):
 
     @classmethod
     def add_key(cls, user: AbstractUser, public_key: str) -> EncryptionKey:
+        """
+        submit a generated key for a user
+        :param user: the user calling the service
+        :param public_key: their public key
+        :return: id/information about key creation
+        """
         if not user.has_perm(CanAddEncryptionKeyPermission):
             raise PermissionError("You are not allowed to add a form key")
         return EncryptionKey.objects.create(user=user, public_key=public_key, active=False)
 
     @classmethod
     def activate_key(cls, user: AbstractUser, public_key_id) -> EncryptionKey:
+        """
+        activate a submitted public key, so that newly generated forms use this key for encryption
+        :param user: the user calling the service
+        :param public_key_id: id the of the public key that should be activated
+        :return: the activated key object
+        """
         if not user.has_perm(CanActivateEncryptionKeyPermission):
             raise PermissionError("You are not allowed to activate this form key")
         public_key = EncryptionKey.objects.get(id=public_key_id)

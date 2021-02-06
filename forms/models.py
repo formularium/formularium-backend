@@ -1,3 +1,4 @@
+import json
 from django.db import models
 from django.db.models import Q
 from django.contrib.auth import get_user_model
@@ -29,6 +30,25 @@ class SignatureKey(models.Model):
         return self.public_key
 
 
+class FormSchemaTemplateTypeChoices(models.TextChoices):
+    FORM_FIELD = "field", _("Form Field")
+    FORM_SECTION = "section", _("Form Section")
+
+
+class FormSchemaTemplate(models.Model):
+    type = models.CharField(
+        max_length=10,
+        choices=FormSchemaTemplateTypeChoices.choices,
+        default=FormSchemaTemplateTypeChoices.FORM_SECTION,
+    )
+    schema = models.TextField()
+    name = models.CharField(max_length=100)
+    source = models.CharField(max_length=255)
+
+    def __str__(self):
+        return self.name
+
+
 class Form(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
@@ -37,8 +57,31 @@ class Form(models.Model):
     active = models.BooleanField()
     teams = models.ManyToManyField(Group, related_name='forms')  # teams that can decrypt the submissions
 
+    @property
+    def generated_schema(self):
+        schema = {}
+        for e in self.schemas:
+            schema[e.name] = json.loads(e.schema)
+
+        return schema
+
     def __str__(self):
         return self.name
+
+
+class FormSchema(models.Model):
+    key = models.CharField(max_length=100)
+    form = models.ForeignKey(Form, on_delete=models.CASCADE, related_name='schemas')
+    # we don't use a json field here because its not supported in sqlite
+    schema = models.TextField()
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['key', 'form'], name='unique_key_per_form'),
+        ]
+
+    def __str__(self):
+        return self.key
 
 
 class FormSubmission(models.Model):
