@@ -52,9 +52,9 @@ class FormSchemaTemplate(models.Model):
 class Form(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
-    xml_code = models.TextField()
-    js_code = models.TextField()
-    active = models.BooleanField()
+    xml_code = models.TextField(blank=True)
+    js_code = models.TextField(blank=True)
+    active = models.BooleanField(default=False)
     teams = models.ManyToManyField(Group, related_name='forms')  # teams that can decrypt the submissions
 
     @property

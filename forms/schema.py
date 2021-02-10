@@ -32,6 +32,13 @@ class FormNode(DjangoObjectType):
         return queryset.filter(active=True)
 
 
+class InternalFormNode(DjangoObjectType):
+    class Meta:
+        model = Form
+        filter_fields = ['id']
+        interfaces = (relay.Node,)
+
+
 class FormSchemaNone(DjangoObjectType):
     class Meta:
         model = FormSchema
@@ -123,6 +130,25 @@ class SubmitEncryptionKey(FailableMutation):
         )
 
 
+class CreateForm(FailableMutation):
+    form = graphene.Field(InternalFormNode)
+
+    class Arguments:
+        name = graphene.String(required=True)
+        description = graphene.String(required=True)
+
+    @permissions_checker([IsAuthenticated, CanEditFormPermission])
+    def mutate(self, info, name, description):
+        user = get_user_from_info(info)
+        try:
+            result = FormService.create_form_(user, name, description)
+        except FormSchemaService.exceptions as e:
+            raise MutationExecutionException(str(e))
+        return CreateForm(
+            success=True, form=result
+        )
+
+
 class CreateFormSchema(FailableMutation):
     form_schema = graphene.Field(FormSchemaNone)
 
@@ -138,7 +164,7 @@ class CreateFormSchema(FailableMutation):
             result = FormSchemaService.create_form_schema(user, key, int(from_global_id(form_id)[1]), schema)
         except FormSchemaService.exceptions as e:
             raise MutationExecutionException(str(e))
-        return SubmitEncryptionKey(
+        return CreateFormSchema(
             success=True, form_schema=result
         )
 
@@ -157,8 +183,37 @@ class UpdateFormSchema(FailableMutation):
             result = FormSchemaService.update_form_schema(user, schema_id, schema)
         except FormSchemaService.exceptions as e:
             raise MutationExecutionException(str(e))
-        return SubmitEncryptionKey(
+        return UpdateFormSchema(
             success=True, form_schema=result
+        )
+
+
+class UpdateForm(FailableMutation):
+    form = graphene.Field(InternalFormNode)
+
+    class Arguments:
+        form_id = graphene.ID(required=True)
+        name = graphene.String()
+        description = graphene.String()
+        xml_code = graphene.String()
+        js_code = graphene.String()
+        active = graphene.Boolean()
+
+    @permissions_checker([IsAuthenticated, CanEditFormPermission])
+    def mutate(self, info, form_id, name, description, xml_code, js_code, active):
+        user = get_user_from_info(info)
+        try:
+            result = FormService.update_form_(user, int(from_global_id(form_id)[1]),
+                                              name=name,
+                                              description=description,
+                                              xml_code=xml_code,
+                                              js_code=js_code,
+                                              active=active,
+                                              )
+        except FormSchemaService.exceptions as e:
+            raise MutationExecutionException(str(e))
+        return UpdateForm(
+            success=True, form=result
         )
 
 
@@ -167,6 +222,8 @@ class Mutation(graphene.ObjectType):
     submit_encryption_key = SubmitEncryptionKey.Field()
     create_form_schema = CreateFormSchema.Field()
     update_form_schema = UpdateFormSchema.Field()
+    create_form = CreateForm.Field()
+    update_form = UpdateForm.Field()
 
 
 ## Schema

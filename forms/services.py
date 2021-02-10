@@ -1,13 +1,17 @@
+from typing import List, Tuple
+
+from collections import Iterable
 from datetime import timedelta, datetime
 import json
 from django.conf import settings
 
-from django.contrib.auth.models import User, AbstractUser
+from django.contrib.auth.models import User, AbstractUser, Group
 from django.utils.translation import gettext_lazy as _
 
-from serious_django_services import Service
+from serious_django_services import Service, NotPassed, CRUDMixin
 import pgpy
 
+from forms.forms import UpdateFormForm, CreateFormForm
 from forms.models import SignatureKey, Form, EncryptionKey, FormSubmission, FormSchema
 from forms.permissions import CanActivateEncryptionKeyPermission, CanAddEncryptionKeyPermission
 
@@ -16,8 +20,13 @@ class FormServiceException(Exception):
     pass
 
 
-class FormService(Service):
+class FormService(Service, CRUDMixin):
     service_exceptions = (FormServiceException,)
+
+    update_form = UpdateFormForm
+    create_form = CreateFormForm
+
+    model = Form
 
     @classmethod
     def retrieve_form(cls, id: int) -> Form:
@@ -83,12 +92,91 @@ class FormService(Service):
 
         return {"content": signed_content, "signature": signature}
 
+    @classmethod
+    def update_form_(cls, user: AbstractUser,
+                     form_id: int,
+                     name: str = NotPassed,
+                     description: str = NotPassed,
+                     xml_code: str = NotPassed,
+                     js_code: str = NotPassed,
+                     active: bool = NotPassed) -> Form:
+        """
+        update an exsisting form
+        :param user: the user calling the service
+        :param form_id: id of the form that should be updated
+        :param name: name of the form
+        :param description: description (legal information, …)
+        :param xml_code: xml code for the visual editor
+        :param js_code: javascript code to render the form
+        :param active: if the form is active or inactive
+        :return: the updated form instance
+        """
+
+        # TODO: implement updated note
+        if not user.has_perm(CanActivateEncryptionKeyPermission):
+            raise PermissionError("You are not allowed to create this form.")
+
+        form = cls._update(form_id, {
+            'name': name,
+            'description': description,
+            'xml_code': xml_code,
+            'js_code': js_code,
+            'active': active,
+        })
+
+        form.refresh_from_db()
+        return form
+
+    @classmethod
+    def update_form_groups(cls, user: AbstractUser, form_id: int, groups: List[int]) -> Form:
+        """
+        update the user-groups that receive the form submissions
+        :param user: the user calling the service
+        :param form_id: the id of the form affected
+        :param groups: a list of groups that should be able to receive submissions
+        :return: the updated form instance
+        """
+        if not user.has_perm(CanActivateEncryptionKeyPermission):
+            raise PermissionError("You are not allowed to create this form.")
+
+        form = FormService.retrieve_form(form_id)
+
+        form.teams.clear()
+
+        for grp in groups:
+            #TODO check team type
+            form.teams.add(Group.objects.get(pk=grp))
+
+        form.save()
+
+        return form
+
+    @classmethod
+    def create_form_(cls, user: AbstractUser, name: str,
+                     description: str) -> Form:
+        """
+        Create a new form
+        :param user: the user calling the service
+        :param name: name of the form
+        :param description: description (legal information, …)
+        :return: the newly created form instance
+        """
+        if not user.has_perm(CanActivateEncryptionKeyPermission):
+            raise PermissionError("You are not allowed to create this form.")
+
+        form = cls._create({
+            'name': name,
+            'description': description
+        })
+
+        return form
+
 
 class FormSchemaService(Service):
     service_exceptions = (FormServiceException,)
 
     @classmethod
-    def _validate_json_schema(cls, schema: str):
+    def _validate_json_schema(cls, schema: str) -> bool:
         """
         validate if the given string is a valid json schema form
         :param schema: the json schema string
@@ -102,7 +190,7 @@ class FormSchemaService(Service):
         return True
 
     @classmethod
-    def create_form_schema(cls, user: AbstractUser, key: str, form_id: int, schema: str):
+    def create_form_schema(cls, user: AbstractUser, key: str, form_id: int, schema: str) -> FormSchema:
         """
         create a new form section/schema
         :param user: the user calling the service
@@ -121,7 +209,7 @@ class FormSchemaService(Service):
         return schema
 
     @classmethod
-    def update_form_schema(cls, user: AbstractUser, schema_id: int, schema: str):
+    def update_form_schema(cls, user: AbstractUser, schema_id: int, schema: str) -> FormSchema:
         """
         :param user: the user calling the service
         :param schema_id: id of the schema that should be updated
@@ -138,6 +226,7 @@ class FormSchemaService(Service):
         form_schema.save()
 
         return form_schema
+
 
 class FormReceiverService(Service):
     service_exceptions = (FormServiceException,)
