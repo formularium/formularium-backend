@@ -39,6 +39,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.sites',
 
+    # GraphQL & PostGIS
+    'graphene_django',
+
     # Serious Django
     'serious_django_services',
     'serious_django_permissions',
