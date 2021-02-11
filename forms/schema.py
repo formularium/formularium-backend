@@ -38,6 +38,14 @@ class InternalFormNode(DjangoObjectType):
         filter_fields = ['id']
         interfaces = (relay.Node,)
 
+    @classmethod
+    @permissions_checker([IsAuthenticated, CanEditFormPermission])
+    def get_node(cls, info, id):
+        try:
+            item = Form.objects.filter(id=id).get()
+        except cls._meta.model.DoesNotExist:
+            return None
+        return item
 
 class FormSchemaNone(DjangoObjectType):
     class Meta:
@@ -85,6 +93,11 @@ class Query(graphene.ObjectType):
     # get public keys for form
     public_keys_for_form = graphene.List(EncryptionKeyNode, form_id=graphene.ID(required=True))
 
+    # get all forms - also inactive, for the admin interface
+    internal_form = relay.Node.Field(InternalFormNode)
+    all_internal_forms = DjangoFilterConnectionField(InternalFormNode)
+
+
     def resolve_public_keys_for_form(self, info, form_id):
         return FormService.retrieve_public_keys_for_form(int(from_global_id(form_id)[1]))
 
@@ -92,6 +105,12 @@ class Query(graphene.ObjectType):
     def resolve_all_form_submissions(self, info, **kwargs):
         user = get_user_from_info(info)
         return FormReceiverService.retrieve_submitted_forms(user)
+
+
+    @permissions_checker([IsAuthenticated, CanEditFormPermission])
+    def resolve_all_internal_forms(self, info, **kwargs):
+        user = get_user_from_info(info)
+        return Form.objects.all()
 
 
 class SubmitForm(FailableMutation):
