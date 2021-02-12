@@ -15,6 +15,8 @@ from graphene_django.filter import DjangoFilterConnectionField
 from graphene.utils.str_converters import to_snake_case
 
 ## Queries
+from serious_django_services import NotPassed
+
 from forms.models import Form, EncryptionKey, FormSubmission, FormSchema
 from forms.permissions import CanRetrieveFormSubmissionsPermission, CanAddEncryptionKeyPermission, CanEditFormPermission
 from forms.services import FormService, FormReceiverService, EncryptionKeyService, FormSchemaService
@@ -219,7 +221,7 @@ class UpdateForm(FailableMutation):
         active = graphene.Boolean()
 
     @permissions_checker([IsAuthenticated, CanEditFormPermission])
-    def mutate(self, info, form_id, name, description, xml_code, js_code, active):
+    def mutate(self, info, form_id, name=NotPassed, description=NotPassed, xml_code=NotPassed, js_code=NotPassed, active=NotPassed):
         user = get_user_from_info(info)
         try:
             result = FormService.update_form_(user, int(from_global_id(form_id)[1]),
