@@ -49,12 +49,30 @@ class InternalFormNode(DjangoObjectType):
             return None
         return item
 
-class FormSchemaNone(DjangoObjectType):
+class FormSchemaNode(DjangoObjectType):
     class Meta:
         model = FormSchema
         filter_fields = ['id']
         interfaces = (relay.Node,)
 
+    @classmethod
+    def get_queryset(cls, queryset, info):
+        return queryset.filter(form__active=True)
+
+class InternalFormSchemaNode(DjangoObjectType):
+    class Meta:
+        model = FormSchema
+        filter_fields = ['id']
+        interfaces = (relay.Node,)
+
+    @classmethod
+    @permissions_checker([IsAuthenticated, CanEditFormPermission])
+    def get_node(cls, info, id):
+        try:
+            item = FormSchema.objects.filter(id=id).get()
+        except cls._meta.model.DoesNotExist:
+            return None
+        return item
 
 class FormSubmissionNode(PermissionDjangoObjectType):
     class Meta:
@@ -98,6 +116,9 @@ class Query(graphene.ObjectType):
     # get all forms - also inactive, for the admin interface
     internal_form = relay.Node.Field(InternalFormNode)
     all_internal_forms = DjangoFilterConnectionField(InternalFormNode)
+
+    form_schema = relay.Node.Field(FormSchemaNode)
+    internal_form_schema = relay.Node.Field(InternalFormSchemaNode)
 
 
     def resolve_public_keys_for_form(self, info, form_id):
@@ -171,7 +192,7 @@ class CreateForm(FailableMutation):
 
 
 class CreateFormSchema(FailableMutation):
-    form_schema = graphene.Field(FormSchemaNone)
+    form_schema = graphene.Field(FormSchemaNode)
 
     class Arguments:
         schema = graphene.String(required=True)
@@ -191,7 +212,7 @@ class CreateFormSchema(FailableMutation):
 
 
 class UpdateFormSchema(FailableMutation):
-    form_schema = graphene.Field(FormSchemaNone)
+    form_schema = graphene.Field(FormSchemaNode)
 
     class Arguments:
         schema_id = graphene.ID(required=True)
