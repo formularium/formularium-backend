@@ -209,6 +209,28 @@ class FormSchemaService(Service):
         return schema
 
     @classmethod
+    def create_or_update_form_schema(cls, user: AbstractUser, key: str, form_id: int, schema: str) -> FormSchema:
+        """
+        create or update a form section/schema
+        :param user: the user calling the service
+        :param key: the key this schema uses
+        :param form_id: id of the form that uses this schema
+        :param schema: the schema object itself
+        :return: the newly created schema object
+        """
+        if not user.has_perm(CanActivateEncryptionKeyPermission):
+            raise PermissionError("You are not allowed to create this form schema.")
+
+        try:
+            schemaobj = FormSchema.objects.get(key=key, form__id=form_id)
+            schemaobj = cls.update_form_schema(user, schemaobj.pk, schema)
+        except FormSchema.DoesNotExist:
+            schemaobj = cls.create_form_schema(user, key, form_id, schema)
+
+        return schemaobj
+
+
+    @classmethod
     def update_form_schema(cls, user: AbstractUser, schema_id: int, schema: str) -> FormSchema:
         """
         :param user: the user calling the service

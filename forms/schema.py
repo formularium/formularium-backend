@@ -211,6 +211,26 @@ class CreateFormSchema(FailableMutation):
         )
 
 
+class CreateOrUpdateFormSchema(FailableMutation):
+    form_schema = graphene.Field(FormSchemaNode)
+
+    class Arguments:
+        schema = graphene.String(required=True)
+        key = graphene.String(required=True)
+        form_id = graphene.ID(required=True)
+
+    @permissions_checker([IsAuthenticated, CanEditFormPermission])
+    def mutate(self, info, schema, key, form_id):
+        user = get_user_from_info(info)
+        try:
+            result = FormSchemaService.create_or_update_form_schema(user, key, int(from_global_id(form_id)[1]), schema)
+        except FormSchemaService.exceptions as e:
+            raise MutationExecutionException(str(e))
+        return CreateOrUpdateFormSchema(
+            success=True, form_schema=result
+        )
+
+
 class UpdateFormSchema(FailableMutation):
     form_schema = graphene.Field(FormSchemaNode)
 

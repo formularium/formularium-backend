@@ -49,3 +49,12 @@ class FormSchemaServiceTest(TestCase):
         schema = FormSchemaService.update_form_schema(self.admin, schema.pk, '{"acab": false}')
         self.assertEqual(FormSchema.objects.count(), 1)
         self.assertEqual(schema.schema, '{"acab": false}')
+
+    def test_create_or_update(self):
+        schema = FormSchemaService.create_or_update_form_schema(self.admin, 'sction', self.form.id, '{"acab": true}')
+        schema_update = FormSchemaService.create_or_update_form_schema(self.admin, 'sction', self.form.id, '{"allo": true}')
+
+        self.assertEqual(schema.pk, schema_update.pk)
+        self.assertEqual(schema_update.schema, '{"allo": true}')
+
+
