@@ -286,6 +286,7 @@ class Mutation(graphene.ObjectType):
     update_form_schema = UpdateFormSchema.Field()
     create_form = CreateForm.Field()
     update_form = UpdateForm.Field()
+    create_or_update_schema = CreateOrUpdateFormSchema.Field()
 
 
 ## Schema
