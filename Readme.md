@@ -19,7 +19,8 @@ Make sure you have the following tools installed:
 
 ##### Install requirements
 - create a virtualenv (pls. use pipenv)
-- install requirements `pipenv install
+- install requirements ``pipenv install``
+- ``pipenv run pre-commit install``
 
 
 ##### Setup Database
