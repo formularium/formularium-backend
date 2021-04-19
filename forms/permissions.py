@@ -53,3 +53,16 @@ class CanEditFormPermission(Permission):
     @staticmethod
     def has_object_permission(context, obj):
         return True
+
+
+class CanAddFormTranslationPermission(Permission):
+    model = Form
+    description = 'can add a new form translation'
+
+    @staticmethod
+    def has_permission(context):
+        return context.user.has_perm(Form)
+
+    @staticmethod
+    def has_object_permission(context, obj):
+        return True

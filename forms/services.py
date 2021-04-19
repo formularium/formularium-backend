@@ -11,9 +11,11 @@ from django.utils.translation import gettext_lazy as _
 from serious_django_services import Service, NotPassed, CRUDMixin
 import pgpy
 
-from forms.forms import UpdateFormForm, CreateFormForm
-from forms.models import SignatureKey, Form, EncryptionKey, FormSubmission, FormSchema
-from forms.permissions import CanActivateEncryptionKeyPermission, CanAddEncryptionKeyPermission
+from forms.forms import UpdateFormForm, CreateFormForm, UpdateFormTranslationForm, CreateFormTranslationForm, \
+    UpdateTranslationKeyForm, CreateTranslationKeyForm
+from forms.models import SignatureKey, Form, EncryptionKey, FormSubmission, FormSchema, FormTranslation, TranslationKey
+from forms.permissions import CanActivateEncryptionKeyPermission, CanAddEncryptionKeyPermission, \
+    CanAddFormTranslationPermission
 
 
 class FormServiceException(Exception):
@@ -144,7 +146,7 @@ class FormService(Service, CRUDMixin):
         form.teams.clear()
 
         for grp in groups:
-            #TODO check team type
+            # TODO check team type
             form.teams.add(Group.objects.get(pk=grp))
 
         form.save()
@@ -229,7 +231,6 @@ class FormSchemaService(Service):
 
         return schemaobj
 
-
     @classmethod
     def update_form_schema(cls, user: AbstractUser, schema_id: int, schema: str) -> FormSchema:
         """
@@ -248,6 +249,117 @@ class FormSchemaService(Service):
         form_schema.save()
 
         return form_schema
+
+
+class TranslationKeyService(Service, CRUDMixin):
+    service_exceptions = (FormServiceException,)
+
+    update_form = UpdateTranslationKeyForm
+    create_form = CreateTranslationKeyForm
+
+    model = TranslationKey
+
+
+class FormTranslationService(Service, CRUDMixin):
+    service_exceptions = (FormServiceException,)
+
+    update_form = UpdateFormTranslationForm
+    create_form = CreateFormTranslationForm
+
+    model = FormTranslation
+
+    @classmethod
+    def create_form_translation(cls, user: AbstractUser, form_id: int, language: str, region:str):
+        """create a new translation for the given form
+        :param user: the user calling the service
+        :param form_id: the form_id the translation is for
+        :param language:  the language the strings should be translated to
+        :param region:  the region of the language the strings should be translated to
+        """
+        form = FormService.retrieve_form(form_id)
+
+        if not user.has_perm(CanAddFormTranslationPermission):
+            raise PermissionError("You are not allowed to add a translation to this form")
+
+        if f"{language}-{region}" not in [a["iso_code"] for a in cls.get_available_languages()]:
+            raise FormServiceException(f"{language}-{region} is not configured as a supported language")
+
+        translation = cls._create({
+            'form': form.id,
+            'language': language,
+            'region': region
+        })
+        return translation
+
+    @classmethod
+    def update_form_translation(cls, user: AbstractUser, translation_id: int, language: str = NotPassed,
+                                region: str = NotPassed, active: bool = NotPassed):
+        """updates a translation for the given form
+        :param language:  the language the strings should be translated to
+        :param region:  the region of the language the strings should be translated to
+        :param translation_id: id of the translation object
+        :param active: is the translation active?
+        :param user: the user calling the service
+
+        """
+        translation = FormTranslation.objects.get(pk=translation_id)
+
+        # if a language was configured when it was still available we should still support updating
+        if f"{language}-{region}" not in [a["iso_code"] for a in cls.get_available_languages()]\
+                and language != translation.language:
+            raise FormServiceException(f"{language}-{region} is not configured as a supported language")
+
+        if not user.has_perm(CanAddFormTranslationPermission):
+            raise PermissionError("You are not allowed to change a translation for this form")
+
+        translation = cls._update(translation.id, {
+            'language': language,
+            'region': region,
+            'active': active,
+        })
+        return translation
+
+    @classmethod
+    def update_translation_string(cls, user: AbstractUser, translation_id: int, key: str, value: str):
+        """
+        create/update a single translation
+        :param user: the user calling the service
+        :param translation_id: the translation_id this string is related to
+        :param key: the translation key
+        :param value: the translation value
+        :return: the newly created translation object
+        """
+        translation = FormTranslation.objects.get(pk=translation_id)
+
+        if not user.has_perm(CanAddFormTranslationPermission):
+            raise PermissionError("You are not allowed to change a translation for this form")
+
+        try:
+            trans_key = TranslationKey.objects.get(key=key, translation=translation.pk)
+            trans_key = TranslationKeyService._update(trans_key.pk, {
+                    "value": value,
+                    "key": key
+                })
+        except TranslationKey.DoesNotExist:
+            trans_key = TranslationKeyService._create({
+                "translation": translation_id,
+                "key": key,
+                "value": value,
+            })
+
+        return trans_key
+
+    @classmethod
+    def get_available_languages(cls):
+        """get all activated languages for this formularium instance"""
+        languages = []
+        for language in settings.LANGUAGES:
+            languages.append({
+                "language": language[1],
+                "iso_code": language[0]
+            })
+
+        return languages
 
 
 class FormReceiverService(Service):

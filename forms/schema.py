@@ -17,9 +17,11 @@ from graphene.utils.str_converters import to_snake_case
 ## Queries
 from serious_django_services import NotPassed
 
-from forms.models import Form, EncryptionKey, FormSubmission, FormSchema
-from forms.permissions import CanRetrieveFormSubmissionsPermission, CanAddEncryptionKeyPermission, CanEditFormPermission
-from forms.services import FormService, FormReceiverService, EncryptionKeyService, FormSchemaService
+from forms.models import Form, EncryptionKey, FormSubmission, FormSchema, FormTranslation, TranslationKey
+from forms.permissions import CanRetrieveFormSubmissionsPermission, CanAddEncryptionKeyPermission, \
+    CanEditFormPermission, CanAddFormTranslationPermission
+from forms.services import FormService, FormReceiverService, EncryptionKeyService, FormSchemaService, \
+    FormTranslationService
 from graphene_permissions.permissions import AllowAuthenticated
 
 
@@ -49,6 +51,7 @@ class InternalFormNode(DjangoObjectType):
             return None
         return item
 
+
 class FormSchemaNode(DjangoObjectType):
     class Meta:
         model = FormSchema
@@ -58,6 +61,25 @@ class FormSchemaNode(DjangoObjectType):
     @classmethod
     def get_queryset(cls, queryset, info):
         return queryset.filter(form__active=True)
+
+
+class FormTranslationNode(DjangoObjectType):
+    class Meta:
+        model = FormTranslation
+        filter_fields = ['id', 'language']
+        interfaces = (relay.Node,)
+
+    @classmethod
+    def get_queryset(cls, queryset, info):
+        return queryset.filter(active=True, form__active=True)
+
+
+class TranslationKeyNode(DjangoObjectType):
+    class Meta:
+        model = TranslationKey
+        filter_fields = ['id']
+        interfaces = (relay.Node,)
+
 
 class InternalFormSchemaNode(DjangoObjectType):
     class Meta:
@@ -74,6 +96,7 @@ class InternalFormSchemaNode(DjangoObjectType):
             return None
         return item
 
+
 class FormSubmissionNode(PermissionDjangoObjectType):
     class Meta:
         model = FormSubmission
@@ -87,6 +110,22 @@ class FormSubmissionNode(PermissionDjangoObjectType):
 
         try:
             item = FormReceiverService.retrieve_submitted_forms(user).filter(id=id).get()
+        except cls._meta.model.DoesNotExist:
+            return None
+        return item
+
+
+class InternalFormTranslationNode(PermissionDjangoObjectType):
+    class Meta:
+        model = FormTranslation
+        filter_fields = ['id', 'language']
+        interfaces = (relay.Node,)
+
+    @classmethod
+    @permissions_checker([IsAuthenticated, CanEditFormPermission])
+    def get_node(cls, info, id):
+        try:
+            item = FormTranslation.objects.filter(id=id).get()
         except cls._meta.model.DoesNotExist:
             return None
         return item
@@ -120,7 +159,6 @@ class Query(graphene.ObjectType):
     form_schema = relay.Node.Field(FormSchemaNode)
     internal_form_schema = relay.Node.Field(InternalFormSchemaNode)
 
-
     def resolve_public_keys_for_form(self, info, form_id):
         return FormService.retrieve_public_keys_for_form(int(from_global_id(form_id)[1]))
 
@@ -128,7 +166,6 @@ class Query(graphene.ObjectType):
     def resolve_all_form_submissions(self, info, **kwargs):
         user = get_user_from_info(info)
         return FormReceiverService.retrieve_submitted_forms(user)
-
 
     @permissions_checker([IsAuthenticated, CanEditFormPermission])
     def resolve_all_internal_forms(self, info, **kwargs):
@@ -211,6 +248,27 @@ class CreateFormSchema(FailableMutation):
         )
 
 
+class CreateFormTranslation(FailableMutation):
+    form_translation = graphene.Field(InternalFormTranslationNode)
+
+    class Arguments:
+        language = graphene.String(required=True)
+        region = graphene.String(required=True)
+        form_id = graphene.ID(required=True)
+
+    @permissions_checker([IsAuthenticated, CanEditFormPermission])
+    def mutate(self, info, form_id, language, region):
+        user = get_user_from_info(info)
+        try:
+            result = FormTranslationService.create_form_translation(user, form_id=int(from_global_id(form_id)[1]),
+                                                                    language=language, region=region)
+        except FormTranslationService.exceptions as e:
+            raise MutationExecutionException(str(e))
+        return CreateFormTranslation(
+            success=True, form_translation=result
+        )
+
+
 class CreateOrUpdateFormSchema(FailableMutation):
     form_schema = graphene.Field(FormSchemaNode)
 
@@ -250,6 +308,50 @@ class UpdateFormSchema(FailableMutation):
         )
 
 
+class UpdateFormTranslationKey(FailableMutation):
+    translation_key = graphene.Field(TranslationKeyNode)
+
+    class Arguments:
+        key = graphene.String(required=True)
+        value = graphene.String(required=True)
+        translation_id = graphene.ID(required=True)
+
+    @permissions_checker([IsAuthenticated, CanEditFormPermission])
+    def mutate(self, info, translation_id, key, value):
+        user = get_user_from_info(info)
+        try:
+            result = FormTranslationService.update_translation_string(
+                user, translation_id=int(from_global_id(translation_id)[1]), key=key, value=value)
+        except FormTranslationService.exceptions as e:
+            raise MutationExecutionException(str(e))
+        return UpdateFormTranslationKey(
+            success=True, translation_key=result
+        )
+
+
+class UpdateFormTranslation(FailableMutation):
+    form_translation = graphene.Field(InternalFormTranslationNode)
+
+    class Arguments:
+        language = graphene.String(required=True)
+        region = graphene.String(required=True)
+        translation_id = graphene.ID(required=True)
+        active = graphene.Boolean(required=True)
+
+    @permissions_checker([IsAuthenticated, CanEditFormPermission])
+    def mutate(self, info, translation_id, language, region, active):
+        user = get_user_from_info(info)
+        try:
+            result = FormTranslationService.update_form_translation(
+                user, translation_id=int(from_global_id(translation_id)[1]), language=language,
+                region=region, active=active)
+        except FormTranslationService.exceptions as e:
+            raise MutationExecutionException(str(e))
+        return UpdateFormTranslation(
+            success=True, form_translation=result
+        )
+
+
 class UpdateForm(FailableMutation):
     form = graphene.Field(InternalFormNode)
 
@@ -262,7 +364,8 @@ class UpdateForm(FailableMutation):
         active = graphene.Boolean()
 
     @permissions_checker([IsAuthenticated, CanEditFormPermission])
-    def mutate(self, info, form_id, name=NotPassed, description=NotPassed, xml_code=NotPassed, js_code=NotPassed, active=NotPassed):
+    def mutate(self, info, form_id, name=NotPassed, description=NotPassed, xml_code=NotPassed, js_code=NotPassed,
+               active=NotPassed):
         user = get_user_from_info(info)
         try:
             result = FormService.update_form_(user, int(from_global_id(form_id)[1]),
@@ -286,6 +389,9 @@ class Mutation(graphene.ObjectType):
     update_form_schema = UpdateFormSchema.Field()
     create_form = CreateForm.Field()
     update_form = UpdateForm.Field()
+    create_form_translation = CreateFormTranslation.Field()
+    update_form_translation = UpdateFormTranslation.Field()
+    update_form_translation_key = UpdateFormTranslationKey.Field()
     create_or_update_schema = CreateOrUpdateFormSchema.Field()
 
 

@@ -4,6 +4,7 @@ from django.db.models import Q
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.utils.translation import gettext_lazy as _
+from languages.fields import LanguageField, RegionField
 
 
 class EncryptionKey(models.Model):
@@ -82,6 +83,26 @@ class FormSchema(models.Model):
 
     def __str__(self):
         return self.key
+
+
+class FormTranslation(models.Model):
+    language = LanguageField(max_length=9)
+    region = RegionField(max_length=9)
+    form = models.ForeignKey(Form, related_name="translations", on_delete=models.CASCADE)
+
+    active = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.form} ({self.language})"
+
+
+class TranslationKey(models.Model):
+    translation = models.ForeignKey(FormTranslation, on_delete=models.CASCADE, related_name="translation_keys")
+    key = models.CharField(max_length=255)
+    value = models.TextField()
+
+    def __str__(self):
+        return f"{self.key} ({self.translation})"
 
 
 class FormSubmission(models.Model):

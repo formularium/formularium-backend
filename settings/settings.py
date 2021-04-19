@@ -164,6 +164,7 @@ AUTHENTICATION_BACKENDS = (
     'oauth.oauth_backend.OAuth2Backend',
     'django.contrib.auth.backends.ModelBackend',
     'serious_django_permissions.permissions.PermissionModelBackend',
+    'guardian.backends.ObjectPermissionBackend'
 
 )
 
