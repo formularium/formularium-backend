@@ -6,13 +6,17 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('oauth', '0001_initial'),
+        ("oauth", "0001_initial"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='userprofile',
-            name='language',
-            field=models.CharField(choices=[('en-US', 'English'), ('de-DE', 'German')], default='en-us', max_length=20),
+            model_name="userprofile",
+            name="language",
+            field=models.CharField(
+                choices=[("en-US", "English"), ("de-DE", "German")],
+                default="en-us",
+                max_length=20,
+            ),
         ),
     ]

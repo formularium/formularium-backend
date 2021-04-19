@@ -1,15 +1,21 @@
 from serious_django_permissions.groups import Group
 
-from forms.permissions import CanRetrieveFormSubmissionsPermission, CanAddEncryptionKeyPermission, \
-    CanActivateEncryptionKeyPermission, CanEditFormPermission, CanAddFormTranslationPermission
+from forms.permissions import (
+    CanRetrieveFormSubmissionsPermission,
+    CanAddEncryptionKeyPermission,
+    CanActivateEncryptionKeyPermission,
+    CanEditFormPermission,
+    CanAddFormTranslationPermission,
+)
 
 
 class AdministrativeStaffGroup(Group):
     permissions = [
         CanRetrieveFormSubmissionsPermission,
         CanAddEncryptionKeyPermission,
-        CanAddFormTranslationPermission
+        CanAddFormTranslationPermission,
     ]
+
 
 class InstanceAdminGroup(Group):
     permissions = [
@@ -17,5 +23,5 @@ class InstanceAdminGroup(Group):
         CanAddEncryptionKeyPermission,
         CanActivateEncryptionKeyPermission,
         CanEditFormPermission,
-        CanAddFormTranslationPermission
+        CanAddFormTranslationPermission,
     ]

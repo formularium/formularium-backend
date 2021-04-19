@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('forms', '0001_initial'),
+        ("forms", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='signaturekey',
-            name='active',
+            model_name="signaturekey",
+            name="active",
             field=models.BooleanField(default=False),
             preserve_default=False,
         ),

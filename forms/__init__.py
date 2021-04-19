@@ -1,1 +1,1 @@
-default_app_config = 'forms.apps.FormsConfig'
+default_app_config = "forms.apps.FormsConfig"

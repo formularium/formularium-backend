@@ -6,23 +6,23 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('forms', '0009_auto_20210206_1222'),
+        ("forms", "0009_auto_20210206_1222"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='form',
-            name='active',
+            model_name="form",
+            name="active",
             field=models.BooleanField(default=False),
         ),
         migrations.AlterField(
-            model_name='form',
-            name='js_code',
+            model_name="form",
+            name="js_code",
             field=models.TextField(blank=True),
         ),
         migrations.AlterField(
-            model_name='form',
-            name='xml_code',
+            model_name="form",
+            name="xml_code",
             field=models.TextField(blank=True),
         ),
     ]

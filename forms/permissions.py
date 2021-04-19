@@ -5,7 +5,7 @@ from forms.models import FormSubmission, EncryptionKey, Form
 
 class CanRetrieveFormSubmissionsPermission(Permission):
     model = FormSubmission
-    description = 'can retrieve form submissions'
+    description = "can retrieve form submissions"
 
     @staticmethod
     def has_permission(context):
@@ -18,7 +18,7 @@ class CanRetrieveFormSubmissionsPermission(Permission):
 
 class CanAddEncryptionKeyPermission(Permission):
     model = EncryptionKey
-    description = 'can add a new encryption key'
+    description = "can add a new encryption key"
 
     @staticmethod
     def has_permission(context):
@@ -31,7 +31,7 @@ class CanAddEncryptionKeyPermission(Permission):
 
 class CanActivateEncryptionKeyPermission(Permission):
     model = EncryptionKey
-    description = 'can activate a new encryption key'
+    description = "can activate a new encryption key"
 
     @staticmethod
     def has_permission(context):
@@ -44,7 +44,7 @@ class CanActivateEncryptionKeyPermission(Permission):
 
 class CanEditFormPermission(Permission):
     model = Form
-    description = 'can activate a new encryption key'
+    description = "can activate a new encryption key"
 
     @staticmethod
     def has_permission(context):
@@ -57,7 +57,7 @@ class CanEditFormPermission(Permission):
 
 class CanAddFormTranslationPermission(Permission):
     model = Form
-    description = 'can add a new form translation'
+    description = "can add a new form translation"
 
     @staticmethod
     def has_permission(context):

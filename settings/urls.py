@@ -34,23 +34,21 @@ class PrivateGraphQLView(LoginRequiredMixin, FileUploadGraphQLView):
     raise_exception = True
 
     def dispatch(self, request, *args, **kwargs):
-        data = {
-            'status': 'unauthorized'
-        }
+        data = {"status": "unauthorized"}
         try:
             if not request.user.is_authenticated:
-                return HttpResponse(json.dumps(data), content_type='application/json')
+                return HttpResponse(json.dumps(data), content_type="application/json")
         except Exception as e:
             return NotAuthenticated()
 
         return super(PrivateGraphQLView, self).dispatch(request, *args, **kwargs)
 
-urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('graphql/', csrf_exempt(FileUploadGraphQLView.as_view(graphiql=True))),
-    path('pgp-signature-key.txt', pgp_signature_key),
-    path(r'oauth/', include(('oauth.urls', 'oauth'), namespace='oauth2_provider')),
-    path('accounts/', include('django.contrib.auth.urls')),
-    path('', home),
 
+urlpatterns = [
+    path("admin/", admin.site.urls),
+    path("graphql/", csrf_exempt(FileUploadGraphQLView.as_view(graphiql=True))),
+    path("pgp-signature-key.txt", pgp_signature_key),
+    path(r"oauth/", include(("oauth.urls", "oauth"), namespace="oauth2_provider")),
+    path("accounts/", include("django.contrib.auth.urls")),
+    path("", home),
 ]

@@ -11,11 +11,28 @@ from django.utils.translation import gettext_lazy as _
 from serious_django_services import Service, NotPassed, CRUDMixin
 import pgpy
 
-from forms.forms import UpdateFormForm, CreateFormForm, UpdateFormTranslationForm, CreateFormTranslationForm, \
-    UpdateTranslationKeyForm, CreateTranslationKeyForm
-from forms.models import SignatureKey, Form, EncryptionKey, FormSubmission, FormSchema, FormTranslation, TranslationKey
-from forms.permissions import CanActivateEncryptionKeyPermission, CanAddEncryptionKeyPermission, \
-    CanAddFormTranslationPermission
+from forms.forms import (
+    UpdateFormForm,
+    CreateFormForm,
+    UpdateFormTranslationForm,
+    CreateFormTranslationForm,
+    UpdateTranslationKeyForm,
+    CreateTranslationKeyForm,
+)
+from forms.models import (
+    SignatureKey,
+    Form,
+    EncryptionKey,
+    FormSubmission,
+    FormSchema,
+    FormTranslation,
+    TranslationKey,
+)
+from forms.permissions import (
+    CanActivateEncryptionKeyPermission,
+    CanAddEncryptionKeyPermission,
+    CanAddFormTranslationPermission,
+)
 
 
 class FormServiceException(Exception):
@@ -40,7 +57,9 @@ class FormService(Service, CRUDMixin):
         try:
             form = Form.objects.get(pk=id, active=True)
         except Form.DoesNotExist:
-            raise FormServiceException(_("This form doesn't exist or isn't available publicly."))
+            raise FormServiceException(
+                _("This form doesn't exist or isn't available publicly.")
+            )
 
         return form
 
@@ -53,55 +72,68 @@ class FormService(Service, CRUDMixin):
         """
         form = cls.retrieve_form(form_id)
         return EncryptionKey.objects.filter(
-            user__in=User.objects.filter(groups__in=form.teams.all()), active=True)
+            user__in=User.objects.filter(groups__in=form.teams.all()), active=True
+        )
 
     @classmethod
     def submit(cls, form_id: int, content: str) -> dict:
         """receives encrypted form data and signs it
-          :param form_id: id of the form the content is for
-          :param content: pgp encrypted form content
-          :returns: object with signed content and the signature
-          """
+        :param form_id: id of the form the content is for
+        :param content: pgp encrypted form content
+        :returns: object with signed content and the signature
+        """
 
         form = FormService.retrieve_form(form_id)
 
         # load the signature key
         try:
             # we currently   load the primary key b/c of a bug in pgpy
-            signature_key = SignatureKey.objects.filter(active=True,
-                                                        key_type=SignatureKey.SignatureKeyType.SECONDARY).get()
+            signature_key = SignatureKey.objects.filter(
+                active=True, key_type=SignatureKey.SignatureKeyType.SECONDARY
+            ).get()
             pkey = pgpy.PGPKey()
             pkey.parse(signature_key.private_key)
 
         except SignatureKey.DoesNotExist:
-            raise FormServiceException(_("Couldn't sign form because there are no signing keys available."))
+            raise FormServiceException(
+                _("Couldn't sign form because there are no signing keys available.")
+            )
 
         created_at = datetime.now()
-        signed_content = json.dumps({
-            "form_data": content,
-            "timestamp": created_at.isoformat(),
-            "public_key_server": str(pkey.pubkey),
-            "public_keys_recipients": [pubkey.public_key for
-                                       pubkey in FormService.retrieve_public_keys_for_form(form.pk)],
-            "form_id": form.pk,
-            "form_name": form.name
-        })
+        signed_content = json.dumps(
+            {
+                "form_data": content,
+                "timestamp": created_at.isoformat(),
+                "public_key_server": str(pkey.pubkey),
+                "public_keys_recipients": [
+                    pubkey.public_key
+                    for pubkey in FormService.retrieve_public_keys_for_form(form.pk)
+                ],
+                "form_id": form.pk,
+                "form_name": form.name,
+            }
+        )
         # build the object that should be signed
         with pkey.subkeys[signature_key.subkey_id].unlock(settings.SECRET_KEY):
             signature = pkey.subkeys[signature_key.subkey_id].sign(signed_content)
 
-        FormSubmission.objects.create(signature=signature, data=content, submitted_at=created_at, form=form)
+        FormSubmission.objects.create(
+            signature=signature, data=content, submitted_at=created_at, form=form
+        )
 
         return {"content": signed_content, "signature": signature}
 
     @classmethod
-    def update_form_(cls, user: AbstractUser,
-                     form_id: int,
-                     name: str = NotPassed,
-                     description: str = NotPassed,
-                     xml_code: str = NotPassed,
-                     js_code: str = NotPassed,
-                     active: bool = NotPassed) -> Form:
+    def update_form_(
+        cls,
+        user: AbstractUser,
+        form_id: int,
+        name: str = NotPassed,
+        description: str = NotPassed,
+        xml_code: str = NotPassed,
+        js_code: str = NotPassed,
+        active: bool = NotPassed,
+    ) -> Form:
         """
         update an exsisting form
         :param user: the user calling the service
@@ -118,19 +150,24 @@ class FormService(Service, CRUDMixin):
         if not user.has_perm(CanActivateEncryptionKeyPermission):
             raise PermissionError("You are not allowed to create this form.")
 
-        form = cls._update(form_id, {
-            'name': name,
-            'description': description,
-            'xml_code': xml_code,
-            'js_code': js_code,
-            'active': active,
-        })
+        form = cls._update(
+            form_id,
+            {
+                "name": name,
+                "description": description,
+                "xml_code": xml_code,
+                "js_code": js_code,
+                "active": active,
+            },
+        )
 
         form.refresh_from_db()
         return form
 
     @classmethod
-    def update_form_groups(cls, user: AbstractUser, form_id: int, groups: List[int]) -> Form:
+    def update_form_groups(
+        cls, user: AbstractUser, form_id: int, groups: List[int]
+    ) -> Form:
         """
         update the user-groups that receive the form submissions
         :param user: the user calling the service
@@ -154,8 +191,7 @@ class FormService(Service, CRUDMixin):
         return form
 
     @classmethod
-    def create_form_(cls, user: AbstractUser, name: str,
-                     description: str) -> Form:
+    def create_form_(cls, user: AbstractUser, name: str, description: str) -> Form:
         """
         Create a new form
         :param user: the user calling the service
@@ -166,10 +202,7 @@ class FormService(Service, CRUDMixin):
         if not user.has_perm(CanActivateEncryptionKeyPermission):
             raise PermissionError("You are not allowed to create this form.")
 
-        form = cls._create({
-            'name': name,
-            'description': description
-        })
+        form = cls._create({"name": name, "description": description})
 
         return form
 
@@ -192,7 +225,9 @@ class FormSchemaService(Service):
         return True
 
     @classmethod
-    def create_form_schema(cls, user: AbstractUser, key: str, form_id: int, schema: str) -> FormSchema:
+    def create_form_schema(
+        cls, user: AbstractUser, key: str, form_id: int, schema: str
+    ) -> FormSchema:
         """
         create a new form section/schema
         :param user: the user calling the service
@@ -211,7 +246,9 @@ class FormSchemaService(Service):
         return schema
 
     @classmethod
-    def create_or_update_form_schema(cls, user: AbstractUser, key: str, form_id: int, schema: str) -> FormSchema:
+    def create_or_update_form_schema(
+        cls, user: AbstractUser, key: str, form_id: int, schema: str
+    ) -> FormSchema:
         """
         create or update a form section/schema
         :param user: the user calling the service
@@ -232,7 +269,9 @@ class FormSchemaService(Service):
         return schemaobj
 
     @classmethod
-    def update_form_schema(cls, user: AbstractUser, schema_id: int, schema: str) -> FormSchema:
+    def update_form_schema(
+        cls, user: AbstractUser, schema_id: int, schema: str
+    ) -> FormSchema:
         """
         :param user: the user calling the service
         :param schema_id: id of the schema that should be updated
@@ -269,7 +308,9 @@ class FormTranslationService(Service, CRUDMixin):
     model = FormTranslation
 
     @classmethod
-    def create_form_translation(cls, user: AbstractUser, form_id: int, language: str, region:str):
+    def create_form_translation(
+        cls, user: AbstractUser, form_id: int, language: str, region: str
+    ):
         """create a new translation for the given form
         :param user: the user calling the service
         :param form_id: the form_id the translation is for
@@ -279,21 +320,31 @@ class FormTranslationService(Service, CRUDMixin):
         form = FormService.retrieve_form(form_id)
 
         if not user.has_perm(CanAddFormTranslationPermission):
-            raise PermissionError("You are not allowed to add a translation to this form")
+            raise PermissionError(
+                "You are not allowed to add a translation to this form"
+            )
 
-        if f"{language}-{region}" not in [a["iso_code"] for a in cls.get_available_languages()]:
-            raise FormServiceException(f"{language}-{region} is not configured as a supported language")
+        if f"{language}-{region}" not in [
+            a["iso_code"] for a in cls.get_available_languages()
+        ]:
+            raise FormServiceException(
+                f"{language}-{region} is not configured as a supported language"
+            )
 
-        translation = cls._create({
-            'form': form.id,
-            'language': language,
-            'region': region
-        })
+        translation = cls._create(
+            {"form": form.id, "language": language, "region": region}
+        )
         return translation
 
     @classmethod
-    def update_form_translation(cls, user: AbstractUser, translation_id: int, language: str = NotPassed,
-                                region: str = NotPassed, active: bool = NotPassed):
+    def update_form_translation(
+        cls,
+        user: AbstractUser,
+        translation_id: int,
+        language: str = NotPassed,
+        region: str = NotPassed,
+        active: bool = NotPassed,
+    ):
         """updates a translation for the given form
         :param language:  the language the strings should be translated to
         :param region:  the region of the language the strings should be translated to
@@ -305,22 +356,34 @@ class FormTranslationService(Service, CRUDMixin):
         translation = FormTranslation.objects.get(pk=translation_id)
 
         # if a language was configured when it was still available we should still support updating
-        if f"{language}-{region}" not in [a["iso_code"] for a in cls.get_available_languages()]\
-                and language != translation.language:
-            raise FormServiceException(f"{language}-{region} is not configured as a supported language")
+        if (
+            f"{language}-{region}"
+            not in [a["iso_code"] for a in cls.get_available_languages()]
+            and language != translation.language
+        ):
+            raise FormServiceException(
+                f"{language}-{region} is not configured as a supported language"
+            )
 
         if not user.has_perm(CanAddFormTranslationPermission):
-            raise PermissionError("You are not allowed to change a translation for this form")
+            raise PermissionError(
+                "You are not allowed to change a translation for this form"
+            )
 
-        translation = cls._update(translation.id, {
-            'language': language,
-            'region': region,
-            'active': active,
-        })
+        translation = cls._update(
+            translation.id,
+            {
+                "language": language,
+                "region": region,
+                "active": active,
+            },
+        )
         return translation
 
     @classmethod
-    def update_translation_string(cls, user: AbstractUser, translation_id: int, key: str, value: str):
+    def update_translation_string(
+        cls, user: AbstractUser, translation_id: int, key: str, value: str
+    ):
         """
         create/update a single translation
         :param user: the user calling the service
@@ -332,20 +395,23 @@ class FormTranslationService(Service, CRUDMixin):
         translation = FormTranslation.objects.get(pk=translation_id)
 
         if not user.has_perm(CanAddFormTranslationPermission):
-            raise PermissionError("You are not allowed to change a translation for this form")
+            raise PermissionError(
+                "You are not allowed to change a translation for this form"
+            )
 
         try:
             trans_key = TranslationKey.objects.get(key=key, translation=translation.pk)
-            trans_key = TranslationKeyService._update(trans_key.pk, {
-                    "value": value,
-                    "key": key
-                })
+            trans_key = TranslationKeyService._update(
+                trans_key.pk, {"value": value, "key": key}
+            )
         except TranslationKey.DoesNotExist:
-            trans_key = TranslationKeyService._create({
-                "translation": translation_id,
-                "key": key,
-                "value": value,
-            })
+            trans_key = TranslationKeyService._create(
+                {
+                    "translation": translation_id,
+                    "key": key,
+                    "value": value,
+                }
+            )
 
         return trans_key
 
@@ -354,10 +420,7 @@ class FormTranslationService(Service, CRUDMixin):
         """get all activated languages for this formularium instance"""
         languages = []
         for language in settings.LANGUAGES:
-            languages.append({
-                "language": language[1],
-                "iso_code": language[0]
-            })
+            languages.append({"language": language[1], "iso_code": language[0]})
 
         return languages
 
@@ -398,7 +461,9 @@ class EncryptionKeyService(Service):
         """
         if not user.has_perm(CanAddEncryptionKeyPermission):
             raise PermissionError("You are not allowed to add a form key")
-        return EncryptionKey.objects.create(user=user, public_key=public_key, active=False)
+        return EncryptionKey.objects.create(
+            user=user, public_key=public_key, active=False
+        )
 
     @classmethod
     def activate_key(cls, user: AbstractUser, public_key_id) -> EncryptionKey:

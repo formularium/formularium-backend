@@ -1,7 +1,14 @@
 from django.contrib import admin
 
-from forms.models import EncryptionKey, Form, FormSubmission, FormSchema, FormSchemaTemplate, FormTranslation, \
-    TranslationKey
+from forms.models import (
+    EncryptionKey,
+    Form,
+    FormSubmission,
+    FormSchema,
+    FormSchemaTemplate,
+    FormTranslation,
+    TranslationKey,
+)
 
 admin.site.register(EncryptionKey)
 admin.site.register(Form)
@@ -15,9 +22,7 @@ class TranslationKeyInline(admin.TabularInline):
 
 
 class FormTranslationAdmin(admin.ModelAdmin):
-    inlines = [
-        TranslationKeyInline
-    ]
+    inlines = [TranslationKeyInline]
 
 
 admin.site.register(FormTranslation, FormTranslationAdmin)
