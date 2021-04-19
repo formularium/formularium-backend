@@ -11,45 +11,88 @@ class Migration(migrations.Migration):
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('auth', '0012_alter_user_first_name_max_length'),
+        ("auth", "0012_alter_user_first_name_max_length"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Form',
+            name="Form",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=100)),
-                ('xml_code', models.TextField()),
-                ('js_code', models.TextField()),
-                ('active', models.BooleanField()),
-                ('teams', models.ManyToManyField(to='auth.Group')),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("name", models.CharField(max_length=100)),
+                ("xml_code", models.TextField()),
+                ("js_code", models.TextField()),
+                ("active", models.BooleanField()),
+                ("teams", models.ManyToManyField(to="auth.Group")),
             ],
         ),
         migrations.CreateModel(
-            name='SignatureKey',
+            name="SignatureKey",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('public_key', models.TextField()),
-                ('private_key', models.TextField()),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("public_key", models.TextField()),
+                ("private_key", models.TextField()),
             ],
         ),
         migrations.CreateModel(
-            name='FormSubmission',
+            name="FormSubmission",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('data', models.TextField()),
-                ('signature', models.TextField()),
-                ('submitted_at', models.DateTimeField(auto_now_add=True)),
-                ('form', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='forms.form')),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("data", models.TextField()),
+                ("signature", models.TextField()),
+                ("submitted_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "form",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to="forms.form"
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='EncryptionKey',
+            name="EncryptionKey",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('public_key', models.TextField()),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("public_key", models.TextField()),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
         ),
     ]

@@ -6,14 +6,14 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('auth', '0012_alter_user_first_name_max_length'),
-        ('forms', '0007_signaturekey_subkey_id'),
+        ("auth", "0012_alter_user_first_name_max_length"),
+        ("forms", "0007_signaturekey_subkey_id"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='form',
-            name='teams',
-            field=models.ManyToManyField(related_name='forms', to='auth.Group'),
+            model_name="form",
+            name="teams",
+            field=models.ManyToManyField(related_name="forms", to="auth.Group"),
         ),
     ]

@@ -8,19 +8,21 @@ from django.urls import reverse
 from django.conf import settings
 from serious_django_permissions.management.commands import create_groups
 
-from forms.models import Form, EncryptionKey, SignatureKey
+from forms.models import Form, EncryptionKey, SignatureKey, FormSchema
 from forms.services import (
     FormService,
     FormServiceException,
     FormReceiverService,
     EncryptionKeyService,
+    FormSchemaService,
+    FormTranslationService,
 )
 from settings.default_groups import AdministrativeStaffGroup, InstanceAdminGroup
 from ...management.commands import create_signature_key
 from ..utils import generate_test_keypair
 
 
-class EncryptionKeyServiceTest(TestCase):
+class FormSchemaServiceTest(TestCase):
     def setUp(self):
         create_groups.Command().handle()
         self.user = get_user_model().objects.create(username="adminstaff")
@@ -47,36 +49,42 @@ class EncryptionKeyServiceTest(TestCase):
         create_signature_key.Command().handle()
         self.form_submission = FormService.submit(form_id=self.form.id, content="helo")
 
-    def test_submit_key(self):
-        self.assertEqual(
-            len(FormService.retrieve_public_keys_for_form(self.form.id)), 1
+    def test_add_translation(self):
+        translation = FormTranslationService.create_form_translation(
+            self.user, form_id=self.form.id, language="de", region="DE"
         )
-        key = EncryptionKeyService.add_key(self.user, "keeey")
-        self.assertEqual(
-            len(FormService.retrieve_public_keys_for_form(self.form.id)), 1
+        self.assertEqual(translation.language, "de")
+
+        with self.assertRaises(FormServiceException):
+            translation = FormTranslationService.create_form_translation(
+                self.user, form_id=self.form.id, language="NOTALanguage", region="DE"
+            )
+
+    def test_update_translation(self):
+        translation = FormTranslationService.create_form_translation(
+            self.user, form_id=self.form.id, language="de", region="DE"
         )
-        key.active = True
-        key.save()
-        self.assertEqual(
-            len(FormService.retrieve_public_keys_for_form(self.form.id)), 2
+        self.assertEqual(translation.language, "de")
+        self.assertEqual(translation.active, False)
+        translation = FormTranslationService.update_form_translation(
+            self.user,
+            translation_id=translation.id,
+            language="en",
+            region="US",
+            active=True,
+        )
+        self.assertEqual(translation.language, "en")
+        self.assertEqual(translation.active, True)
+
+    def test_update_translation_key(self):
+        translation = FormTranslationService.create_form_translation(
+            self.user, form_id=self.form.id, language="en", region="US"
+        )
+        translated_key = FormTranslationService.update_translation_string(
+            user=self.user,
+            translation_id=translation.pk,
+            key="a.greeting",
+            value="Hey there!",
         )
 
-    def test_activate_key(self):
-        key = EncryptionKeyService.add_key(self.user, "keeey")
-        self.assertEqual(
-            len(FormService.retrieve_public_keys_for_form(self.form.id)), 1
-        )
-
-        key = EncryptionKeyService.activate_key(self.admin, key.id)
-
-        self.assertEqual(
-            len(FormService.retrieve_public_keys_for_form(self.form.id)), 2
-        )
-
-        key_two = EncryptionKeyService.add_key(self.user, "keeey")
-        self.assertEqual(
-            len(FormService.retrieve_public_keys_for_form(self.form.id)), 2
-        )
-
-        with self.assertRaises(PermissionError):
-            key_two = EncryptionKeyService.activate_key(self.user, key_two)
+        self.assertEqual(translated_key.value, "Hey there!")

@@ -20,7 +20,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/3.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'jtclo%8p1pc-7ljld_g!5nf(ci@7ndtzpqt_x84uy7xoz$ve23'
+SECRET_KEY = "jtclo%8p1pc-7ljld_g!5nf(ci@7ndtzpqt_x84uy7xoz$ve23"
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -31,81 +31,72 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'django.contrib.sites',
-
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    "django.contrib.sites",
     # GraphQL & PostGIS
-    'graphene_django',
-
+    "graphene_django",
     # Serious Django
-    'serious_django_services',
-    'serious_django_permissions',
-    'serious_django_graphene',
-
-    'oauth2_provider',
-
-    'crispy_forms',
-
+    "serious_django_services",
+    "serious_django_permissions",
+    "serious_django_graphene",
+    "oauth2_provider",
+    "crispy_forms",
     # cors
-    'corsheaders',
-
+    "corsheaders",
     # i18n language model field
-    'languages',
-
-    'oauth',
-    'forms',
-
+    "languages",
+    "oauth",
+    "forms",
 ]
 
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'corsheaders.middleware.CorsPostCsrfMiddleware',
-    'oauth2_provider.middleware.OAuth2TokenMiddleware',
-
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "corsheaders.middleware.CorsPostCsrfMiddleware",
+    "oauth2_provider.middleware.OAuth2TokenMiddleware",
 ]
 
 CORS_ALLOW_ALL_ORIGINS = True
 
-ROOT_URLCONF = 'settings.urls'
+ROOT_URLCONF = "settings.urls"
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [str(BASE_DIR.joinpath('settings/templates'))],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [str(BASE_DIR.joinpath("settings/templates"))],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
             ],
         },
     },
 ]
 
-WSGI_APPLICATION = 'settings.wsgi.application'
+WSGI_APPLICATION = "settings.wsgi.application"
 
 
 # Database
 # https://docs.djangoproject.com/en/3.1/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
     }
 }
 
@@ -115,16 +106,16 @@ DATABASES = {
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
 
@@ -132,15 +123,16 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/3.1/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = "en-us"
 
 from django.utils.translation import ugettext_lazy as _
+
 LANGUAGES = (
-    ('en-US', _('English')),
-    ('de-DE', _('German')),
+    ("en-US", _("English")),
+    ("de-DE", _("German")),
 )
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = "UTC"
 
 USE_I18N = True
 
@@ -154,30 +146,26 @@ APPEND_SLASH = True
 
 
 # Graphene settings
-GRAPHENE = {
-    'SCHEMA': 'settings.schema.schema'
-}
+GRAPHENE = {"SCHEMA": "settings.schema.schema"}
 
-STATICFILES_DIRS = ( 'settings/static/', )
+STATICFILES_DIRS = ("settings/static/",)
 
 AUTHENTICATION_BACKENDS = (
-    'oauth.oauth_backend.OAuth2Backend',
-    'django.contrib.auth.backends.ModelBackend',
-    'serious_django_permissions.permissions.PermissionModelBackend',
-
+    "oauth.oauth_backend.OAuth2Backend",
+    "django.contrib.auth.backends.ModelBackend",
+    "serious_django_permissions.permissions.PermissionModelBackend",
+    "guardian.backends.ObjectPermissionBackend",
 )
 
 
-
 # Serious Django configuration
-DEFAULT_GROUPS_MODULE = 'settings.default_groups'
-
+DEFAULT_GROUPS_MODULE = "settings.default_groups"
 
 
 # TODO: move this to config
-JWT_ISSUER = 'FORMULARIUM'
+JWT_ISSUER = "FORMULARIUM"
 JWT_ENABLED = True
-JWT_ID_ATTRIBUTE = 'email'
+JWT_ID_ATTRIBUTE = "email"
 JWT_PRIVATE_KEY_FORMULARIUM = """
 -----BEGIN RSA PRIVATE KEY-----
 MIIJJwIBAAKCAgEApZDxqhI8O93V0LGwAiQqYR1n2PPeby7DbvrE3yd4zWgw5Rxe
@@ -250,17 +238,15 @@ ODTozIIfl6GpJzbHxSWcKdmp348IogXHFd8TQgdXEtO1jQ3Npo82IIcCAwEAAQ==
 """
 
 
-
 OAUTH2_PROVIDER = {
-    'SCOPES': {
-        'admin': 'Administrator',
-        'administrative-staff': 'Administrative Staff',
+    "SCOPES": {
+        "admin": "Administrator",
+        "administrative-staff": "Administrative Staff",
     },
-
 }
 
-CRISPY_TEMPLATE_PACK = 'bootstrap4'
+CRISPY_TEMPLATE_PACK = "bootstrap4"
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
 
-STATIC_URL = '/static/'
+STATIC_URL = "/static/"

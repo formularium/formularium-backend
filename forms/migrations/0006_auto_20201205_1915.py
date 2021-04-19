@@ -6,17 +6,17 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('forms', '0005_formsubmission_description'),
+        ("forms", "0005_formsubmission_description"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='formsubmission',
-            name='description',
+            model_name="formsubmission",
+            name="description",
         ),
         migrations.AddField(
-            model_name='form',
-            name='description',
+            model_name="form",
+            name="description",
             field=models.TextField(blank=True),
         ),
     ]

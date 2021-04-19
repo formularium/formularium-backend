@@ -4,6 +4,8 @@ from django.db.models import Q
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.utils.translation import gettext_lazy as _
+from languages.languages import LANGUAGES
+from languages.regions import REGIONS
 
 
 class EncryptionKey(models.Model):
@@ -17,8 +19,8 @@ class EncryptionKey(models.Model):
 
 class SignatureKey(models.Model):
     class SignatureKeyType(models.TextChoices):
-        PRIMARY = 'primary', _('Primary')
-        SECONDARY = 'secondary', _('Secondary')
+        PRIMARY = "primary", _("Primary")
+        SECONDARY = "secondary", _("Secondary")
 
     public_key = models.TextField()
     private_key = models.TextField()
@@ -55,7 +57,9 @@ class Form(models.Model):
     xml_code = models.TextField(blank=True)
     js_code = models.TextField(blank=True)
     active = models.BooleanField(default=False)
-    teams = models.ManyToManyField(Group, related_name='forms')  # teams that can decrypt the submissions
+    teams = models.ManyToManyField(
+        Group, related_name="forms"
+    )  # teams that can decrypt the submissions
 
     @property
     def generated_schema(self):
@@ -71,17 +75,41 @@ class Form(models.Model):
 
 class FormSchema(models.Model):
     key = models.CharField(max_length=100)
-    form = models.ForeignKey(Form, on_delete=models.CASCADE, related_name='schemas')
+    form = models.ForeignKey(Form, on_delete=models.CASCADE, related_name="schemas")
     # we don't use a json field here because its not supported in sqlite
     schema = models.TextField()
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=['key', 'form'], name='unique_key_per_form'),
+            models.UniqueConstraint(fields=["key", "form"], name="unique_key_per_form"),
         ]
 
     def __str__(self):
         return self.key
+
+
+class FormTranslation(models.Model):
+    language = models.CharField(max_length=9, choices=LANGUAGES)
+    region = models.CharField(choices=REGIONS, max_length=9)
+    form = models.ForeignKey(
+        Form, related_name="translations", on_delete=models.CASCADE
+    )
+
+    active = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.form} ({self.language})"
+
+
+class TranslationKey(models.Model):
+    translation = models.ForeignKey(
+        FormTranslation, on_delete=models.CASCADE, related_name="translation_keys"
+    )
+    key = models.CharField(max_length=255)
+    value = models.TextField()
+
+    def __str__(self):
+        return f"{self.key} ({self.translation})"
 
 
 class FormSubmission(models.Model):
@@ -91,4 +119,4 @@ class FormSubmission(models.Model):
     submitted_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f'{self.form} ({self.submitted_at})'
+        return f"{self.form} ({self.submitted_at})"

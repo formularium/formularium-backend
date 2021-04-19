@@ -5,7 +5,11 @@ import graphene
 from graphene import relay, ObjectType, Field
 from graphene_django.types import DjangoObjectType
 from graphene_file_upload.scalars import Upload
-from serious_django_graphene import get_user_from_info, FailableMutation, MutationExecutionException
+from serious_django_graphene import (
+    get_user_from_info,
+    FailableMutation,
+    MutationExecutionException,
+)
 
 from oauth.services import UserProfileService
 
@@ -36,16 +40,21 @@ class UserType(DjangoObjectType):
         if self.profile.profile_picture:
             return self.profile.profile_picture.url
 
-
-
     def resolve_profile_setup_done(self, info):
         return self.profile.profile_setup_done
-
 
     class Meta:
         model = get_user_model()
         filter_fields = {}
-        exclude_fields = ('password', 'is_superuser', 'is_staff', 'last_login', 'date_joined', 'is_active', 'username')
+        exclude_fields = (
+            "password",
+            "is_superuser",
+            "is_staff",
+            "last_login",
+            "date_joined",
+            "is_active",
+            "username",
+        )
 
 
 class LanguageType(ObjectType):
@@ -60,6 +69,7 @@ class UserQuery(object):
     what is an abstract type?
     http://docs.graphene-python.org/en/latest/types/abstracttypes/
     """
+
     user = relay.Node.Field(UserType)
 
 
@@ -77,8 +87,6 @@ class Query(ObjectType):
     def resolve_get_available_languages(self, info, **kwargs):
         user = get_user_from_info(info)
         return UserProfileService.get_available_language(user)
-
-
 
 
 class UpdateMyUserProfile(FailableMutation):
@@ -110,14 +118,10 @@ class UploadProfilePicture(FailableMutation):
         file_ = kwargs["profile_picture"]
 
         try:
-            user = UserProfileService.upload_profile_picture(
-                user=user, picture=file_
-            )
+            user = UserProfileService.upload_profile_picture(user=user, picture=file_)
         except UserProfileService.exceptions as e:
             raise MutationExecutionException(str(e))
-        return UploadProfilePicture(
-            me=user, success=True
-        )
+        return UploadProfilePicture(me=user, success=True)
 
 
 class Mutation(graphene.ObjectType):

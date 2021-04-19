@@ -23,20 +23,23 @@ class OAuth2Backend:
                 try:
                     payload = decode_jwt(hdr[1])
                 except jwt.ExpiredSignatureError:
-                    msg = 'Signature has expired.'
+                    msg = "Signature has expired."
                     raise exceptions.NotAuthenticated(msg)
                 except jwt.DecodeError:
-                    msg = 'Error decoding signature.'
+                    msg = "Error decoding signature."
                     raise exceptions.NotAuthenticated(msg)
-                except (jwt.InvalidTokenError,
-                        jwt.InvalidSignatureError):
+                except (jwt.InvalidTokenError, jwt.InvalidSignatureError):
                     raise exceptions.NotAuthenticated()
 
                 uri, http_method, body, headers = OAuthLibCore._extract_params(request)
-                headers["HTTP_AUTHORIZATION"] = " ".join([hdr[0], payload["access_token"]])
+                headers["HTTP_AUTHORIZATION"] = " ".join(
+                    [hdr[0], payload["access_token"]]
+                )
                 headers["Authorization"] = " ".join([hdr[0], payload["access_token"]])
 
-                valid, r = OAuthLibCore.server.verify_request(uri, http_method, body, headers, scopes=[])
+                valid, r = OAuthLibCore.server.verify_request(
+                    uri, http_method, body, headers, scopes=[]
+                )
                 if valid:
                     return r.user
         return None

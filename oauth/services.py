@@ -17,7 +17,9 @@ class UserProfileService(Service, CRUDMixin):
     model = UserProfile
 
     @classmethod
-    def update_user_basic_information(cls, user, first_name=None, last_name=None, language=None):
+    def update_user_basic_information(
+        cls, user, first_name=None, last_name=None, language=None
+    ):
         """
         Update user basic information like name, … for the current user
         :param language: iso language code like en, de, …
@@ -32,10 +34,7 @@ class UserProfileService(Service, CRUDMixin):
         if last_name:
             user.last_name = last_name
 
-        cls._update(user.profile.pk, {
-            'language': language,
-            'profile_setup_done': True
-        })
+        cls._update(user.profile.pk, {"language": language, "profile_setup_done": True})
         user.profile.refresh_from_db()
 
         user.save()
@@ -50,14 +49,13 @@ class UserProfileService(Service, CRUDMixin):
         :return: updated user object
         """
         # https://docs.djangoproject.com/en/2.2/howto/custom-file-storage/#django.core.files.storage.get_valid_name
-        file_name, file_extension = picture.name.rsplit('.', 1)
+        file_name, file_extension = picture.name.rsplit(".", 1)
         random_suffix = get_random_string(14)
-        picture.name = f'{random_suffix}.{file_extension}'
+        picture.name = f"{random_suffix}.{file_extension}"
 
         user.profile.profile_picture = picture
         user.profile.save()
         return user
-
 
     @classmethod
     def get_available_language(cls, user):
@@ -67,11 +65,6 @@ class UserProfileService(Service, CRUDMixin):
         """
         languages = []
         for language in settings.LANGUAGES:
-            languages.append({
-                "language": language[1],
-                "iso_code": language[0]
-            })
+            languages.append({"language": language[1], "iso_code": language[0]})
 
         return languages
-
-

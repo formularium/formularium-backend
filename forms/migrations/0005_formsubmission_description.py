@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('forms', '0004_encryptionkey_active'),
+        ("forms", "0004_encryptionkey_active"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='formsubmission',
-            name='description',
+            model_name="formsubmission",
+            name="description",
             field=models.TextField(blank=True),
         ),
     ]

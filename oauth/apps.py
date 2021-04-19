@@ -2,7 +2,7 @@ from django.apps import AppConfig
 
 
 class OauthConfig(AppConfig):
-    name = 'oauth'
+    name = "oauth"
 
     def register_signals(self):
         from . import signals

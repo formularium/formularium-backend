@@ -7,14 +7,15 @@ class UpdateUserProfileForm(forms.ModelForm):
     class Meta:
         model = UserProfile
         fields = [
-            'language',
-            'profile_setup_done',
+            "language",
+            "profile_setup_done",
         ]
+
 
 class CreateUserProfileForm(forms.ModelForm):
     class Meta:
         model = UserProfile
         fields = [
-            'language',
-            'profile_setup_done',
+            "language",
+            "profile_setup_done",
         ]
