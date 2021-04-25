@@ -157,6 +157,8 @@ class InternalFormTranslationNode(PermissionDjangoObjectType):
 
 
 class EncryptionKeyNode(DjangoObjectType):
+    fingerprint = graphene.Field(graphene.String)
+
     class Meta:
         model = EncryptionKey
 

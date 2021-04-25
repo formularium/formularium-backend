@@ -2,6 +2,8 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group as DjGroup
 
 import graphene
+from django_graphene_permissions import permissions_checker
+from django_graphene_permissions.permissions import IsAuthenticated
 from graphene import relay, ObjectType, Field
 from graphene_django.types import DjangoObjectType
 from graphene_file_upload.scalars import Upload
@@ -56,6 +58,15 @@ class UserType(DjangoObjectType):
             "username",
         )
 
+    @classmethod
+    @permissions_checker([IsAuthenticated])
+    def get_node(cls, info, id):
+        try:
+            item = cls._meta.model.objects.filter(id=id).get()
+        except cls._meta.model.DoesNotExist:
+            return None
+        return item
+
 
 class LanguageType(ObjectType):
     """Language object"""
@@ -97,6 +108,7 @@ class UpdateMyUserProfile(FailableMutation):
 
     me = graphene.Field(UserType)
 
+    @permissions_checker([IsAuthenticated])
     def mutate(self, info, **kwargs):
         user = get_user_from_info(info)
 
@@ -113,6 +125,7 @@ class UploadProfilePicture(FailableMutation):
 
     me = graphene.Field(UserType)
 
+    @permissions_checker([IsAuthenticated])
     def mutate(self, info, **kwargs):
         user = get_user_from_info(info)
         file_ = kwargs["profile_picture"]
