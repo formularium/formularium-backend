@@ -313,7 +313,7 @@ class ActivateEncryptionKey(FailableMutation):
         user = get_user_from_info(info)
         try:
             result = EncryptionKeyService.activate_key(
-                user, int(from_global_id(public_key_id[0]))
+                user, int(from_global_id(public_key_id)[0])
             )
         except EncryptionKeyService.exceptions as e:
             raise MutationExecutionException(str(e))
