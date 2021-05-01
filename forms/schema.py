@@ -287,7 +287,7 @@ class SubmitForm(FailableMutation):
 
 
 class SubmitEncryptionKey(FailableMutation):
-    encryption_key = graphene.Field(EncryptionKeyNode)
+    encryption_key = graphene.Field(InactiveEncryptionKeyNode)
 
     class Arguments:
         public_key = graphene.String(required=True)
@@ -303,7 +303,7 @@ class SubmitEncryptionKey(FailableMutation):
 
 
 class ActivateEncryptionKey(FailableMutation):
-    encryption_key = graphene.Field(EncryptionKeyNode)
+    encryption_key = graphene.Field(InactiveEncryptionKeyNode)
 
     class Arguments:
         public_key_id = graphene.ID(required=True)
@@ -313,11 +313,27 @@ class ActivateEncryptionKey(FailableMutation):
         user = get_user_from_info(info)
         try:
             result = EncryptionKeyService.activate_key(
-                user, int(from_global_id(public_key_id)[0])
+                user, int(from_global_id(public_key_id)[1])
             )
         except EncryptionKeyService.exceptions as e:
             raise MutationExecutionException(str(e))
         return ActivateEncryptionKey(success=True, encryption_key=result)
+
+
+class RemoveEncryptionKey(FailableMutation):
+    class Arguments:
+        public_key_id = graphene.ID(required=True)
+
+    @permissions_checker([IsAuthenticated, CanActivateEncryptionKeyPermission])
+    def mutate(self, info, public_key_id):
+        user = get_user_from_info(info)
+        try:
+            result = EncryptionKeyService.remove_key(
+                user, int(from_global_id(public_key_id)[1])
+            )
+        except EncryptionKeyService.exceptions as e:
+            raise MutationExecutionException(str(e))
+        return RemoveEncryptionKey(success=True)
 
 
 class CreateForm(FailableMutation):
@@ -597,6 +613,7 @@ class Mutation(graphene.ObjectType):
     submit_form = SubmitForm.Field()
     submit_encryption_key = SubmitEncryptionKey.Field()
     activate_encryption_key = ActivateEncryptionKey.Field()
+    remove_encryption_key = RemoveEncryptionKey.Field()
     create_form_schema = CreateFormSchema.Field()
     update_form_schema = UpdateFormSchema.Field()
     create_form = CreateForm.Field()

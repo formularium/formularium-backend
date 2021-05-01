@@ -467,7 +467,7 @@ class EncryptionKeyService(Service):
     @classmethod
     def activate_key(cls, user: AbstractUser, public_key_id: int) -> EncryptionKey:
         """
-        activate a submitted public key, so that newly generated forms use this key for encryption
+        activate a submitted public key that is used to share form keys between users
         :param user: the user calling the service
         :param public_key_id: id the of the public key that should be activated
         :return: the activated key object
@@ -483,3 +483,19 @@ class EncryptionKeyService(Service):
         public_key.save()
 
         return public_key
+
+    @classmethod
+    def remove_key(cls, user: AbstractUser, public_key_id: int) -> bool:
+        """
+        remove a submitted public key that is used to share form keys between users
+        :param user: the user calling the service
+        :param public_key_id: id the of the public key that should be activated
+        :return: the activated key object
+        """
+        if not user.has_perm(CanActivateEncryptionKeyPermission):
+            raise PermissionError("You are not allowed to activate this form key")
+        public_key = EncryptionKey.objects.get(id=public_key_id)
+
+        public_key.delete()
+
+        return True
