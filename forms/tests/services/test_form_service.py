@@ -9,20 +9,28 @@ from django.conf import settings
 from serious_django_permissions.management.commands import create_groups
 
 from forms.models import Form, EncryptionKey, SignatureKey
-from forms.services import FormService, FormServiceException
+from forms.services.forms import (
+    FormService,
+    FormServiceException,
+    FormReceiverService,
+    EncryptionKeyService,
+    FormSchemaService,
+)
+from forms.services.teams import TeamService, TeamMembershipService
 from settings.default_groups import AdministrativeStaffGroup, InstanceAdminGroup
 from ...management.commands import create_signature_key
 from ..utils import generate_test_keypair
 
 
-class FormReceiverServiceTest(TestCase):
+class FormServiceTest(TestCase):
     def setUp(self):
         create_groups.Command().handle()
 
-        self.user = get_user_model().objects.create(username="user")
-        self.admin = get_user_model().objects.create(username="admin")
+        self.user = get_user_model().objects.create(username="adminstaff")
+        self.admin = get_user_model().objects.create(username="instanceadmin")
         self.user.groups.add(AdministrativeStaffGroup)
         self.admin.groups.add(InstanceAdminGroup)
+
         self.form = Form.objects.create(
             name="Hundiformular",
             description="Doggo",
@@ -32,8 +40,12 @@ class FormReceiverServiceTest(TestCase):
         )
 
         # create a group and add a form/user to it
-        self.group = Group.objects.create(name="hundigruppe")
-        self.user.groups.add(self.group)
+        self.group = TeamService.create(
+            self.admin, "Hunditeam", "fefecsdcsd", "jrnvnkrvnrk"
+        )
+        TeamMembershipService.add_member(
+            self.admin, team_id=self.group.id, key="dcdcd", invited_user_id=self.user.id
+        )
         self.form.teams.add(self.group)
 
     def test_retrieve_pgp_keys_for_form(self):
@@ -51,7 +63,7 @@ class FormReceiverServiceTest(TestCase):
             public_key=keypair["publickey"], active=True, user=self.user
         )
         keys = FormService.retrieve_public_keys_for_form(self.form.id)
-        self.assertEqual(len(keys), 2)
+        self.assertEqual(len(keys), 1)
 
         # disable a key
         first_key.active = False
@@ -63,7 +75,7 @@ class FormReceiverServiceTest(TestCase):
         second_key.active = False
         second_key.save()
         keys = FormService.retrieve_public_keys_for_form(self.form.id)
-        self.assertEqual(len(keys), 0)
+        self.assertEqual(len(keys), 1)
 
     def test_retrieve_form(self):
         # check form is retrieveable
@@ -150,20 +162,20 @@ class FormReceiverServiceTest(TestCase):
         )
         self.assertEqual(form.xml_code, "<xml></xml>")
 
-        grp = Group.objects.create(name="yolo")
+        grp = TeamService.create(self.admin, name="yolo", public_key="vfvf", key="fvrv")
 
-        form = FormService.update_form_groups(self.admin, form.pk, [self.group.pk])
+        form = FormService.update_form_teams(self.admin, form.pk, [self.group.pk])
         self.assertEqual(form.teams.first(), self.group)
         self.assertEqual(form.teams.count(), 1)
 
-        form = FormService.update_form_groups(self.admin, form.pk, [grp.pk])
+        form = FormService.update_form_teams(self.admin, form.pk, [grp.pk])
         self.assertEqual(form.teams.first(), grp)
         self.assertEqual(form.teams.count(), 1)
 
-        form = FormService.update_form_groups(
+        form = FormService.update_form_teams(
             self.admin, form.pk, [self.group.pk, grp.pk]
         )
         self.assertEqual(form.teams.count(), 2)
 
         with self.assertRaises(PermissionError):
-            form = FormService.update_form_groups(self.user, form.pk, [grp.pk])
+            form = FormService.update_form_teams(self.user, form.pk, [grp.pk])

@@ -3,8 +3,12 @@ from django.contrib.auth.models import Group as DjGroup
 
 import graphene
 from django_graphene_permissions import permissions_checker
-from django_graphene_permissions.permissions import IsAuthenticated
+from django_graphene_permissions.permissions import (
+    IsAuthenticated,
+    PermissionDjangoObjectType,
+)
 from graphene import relay, ObjectType, Field
+from graphene_django.filter import DjangoFilterConnectionField
 from graphene_django.types import DjangoObjectType
 from graphene_file_upload.scalars import Upload
 from serious_django_graphene import (
@@ -24,16 +28,13 @@ class Group(DjangoObjectType):
         filter_fields = {}
 
 
-class UserType(DjangoObjectType):
+class UserType(PermissionDjangoObjectType):
     """
     User Node
     """
 
     language = graphene.String()
     profile_picture = graphene.String()
-    name_on_po_box = graphene.String()
-    profile_setup_done = graphene.Boolean()
-    newsletter = graphene.Boolean()
 
     def resolve_language(self, info):
         return self.profile.language
@@ -42,12 +43,10 @@ class UserType(DjangoObjectType):
         if self.profile.profile_picture:
             return self.profile.profile_picture.url
 
-    def resolve_profile_setup_done(self, info):
-        return self.profile.profile_setup_done
-
     class Meta:
         model = get_user_model()
         filter_fields = {}
+        interfaces = (relay.Node,)
         exclude_fields = (
             "password",
             "is_superuser",
@@ -87,13 +86,20 @@ class UserQuery(object):
 class Query(ObjectType):
 
     me = graphene.Field(UserType)
+    all_users = DjangoFilterConnectionField(UserType)
     get_available_languages = graphene.List(LanguageType)
 
+    @permissions_checker([IsAuthenticated])
     def resolve_me(self, info, **kwargs):
         user = get_user_from_info(info)
         if user.is_authenticated:
             return get_user_from_info(info)
         return None
+
+    @permissions_checker([IsAuthenticated])
+    def resolve_all_users(self, info, **kwargs):
+        user = get_user_from_info(info)
+        return get_user_model().objects.all()
 
     def resolve_get_available_languages(self, info, **kwargs):
         user = get_user_from_info(info)

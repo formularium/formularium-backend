@@ -39,6 +39,5 @@ django-graphene-permissions = "*"
 packaging = "*"
 black = {git = "git://github.com/psf/black"}
 pre-commit = "*"
-
-[requires]
-python_version = "3.8"
+pytest = "*"
+coverage = "*"

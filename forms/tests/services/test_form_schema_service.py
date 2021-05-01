@@ -9,13 +9,14 @@ from django.conf import settings
 from serious_django_permissions.management.commands import create_groups
 
 from forms.models import Form, EncryptionKey, SignatureKey, FormSchema
-from forms.services import (
+from forms.services.forms import (
     FormService,
     FormServiceException,
     FormReceiverService,
     EncryptionKeyService,
     FormSchemaService,
 )
+from forms.services.teams import TeamService, TeamMembershipService
 from settings.default_groups import AdministrativeStaffGroup, InstanceAdminGroup
 from ...management.commands import create_signature_key
 from ..utils import generate_test_keypair
@@ -26,6 +27,8 @@ class FormSchemaServiceTest(TestCase):
         create_groups.Command().handle()
         self.user = get_user_model().objects.create(username="adminstaff")
         self.admin = get_user_model().objects.create(username="instanceadmin")
+        self.user.groups.add(AdministrativeStaffGroup)
+        self.admin.groups.add(InstanceAdminGroup)
 
         self.form = Form.objects.create(
             name="Hundiformular",
@@ -36,10 +39,12 @@ class FormSchemaServiceTest(TestCase):
         )
 
         # create a group and add a form/user to it
-        self.group = Group.objects.create(name="hundigruppe")
-        self.user.groups.add(self.group)
-        self.user.groups.add(AdministrativeStaffGroup)
-        self.admin.groups.add(InstanceAdminGroup)
+        self.group = TeamService.create(
+            self.admin, "Hunditeam", "fefecsdcsd", "jrnvnkrvnrk"
+        )
+        TeamMembershipService.add_member(
+            self.admin, team_id=self.group.id, key="dcdcd", invited_user_id=self.user.id
+        )
         self.form.teams.add(self.group)
         self.keypair = generate_test_keypair()
         self.first_key = EncryptionKey.objects.create(

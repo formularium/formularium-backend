@@ -9,12 +9,14 @@ from django.conf import settings
 from serious_django_permissions.management.commands import create_groups
 
 from forms.models import Form, EncryptionKey, SignatureKey
-from forms.services import (
+from forms.services.forms import (
     FormService,
     FormServiceException,
     FormReceiverService,
     EncryptionKeyService,
+    FormSchemaService,
 )
+from forms.services.teams import TeamService, TeamMembershipService
 from settings.default_groups import AdministrativeStaffGroup, InstanceAdminGroup
 from ...management.commands import create_signature_key
 from ..utils import generate_test_keypair
@@ -25,6 +27,8 @@ class EncryptionKeyServiceTest(TestCase):
         create_groups.Command().handle()
         self.user = get_user_model().objects.create(username="adminstaff")
         self.admin = get_user_model().objects.create(username="instanceadmin")
+        self.user.groups.add(AdministrativeStaffGroup)
+        self.admin.groups.add(InstanceAdminGroup)
 
         self.form = Form.objects.create(
             name="Hundiformular",
@@ -35,10 +39,12 @@ class EncryptionKeyServiceTest(TestCase):
         )
 
         # create a group and add a form/user to it
-        self.group = Group.objects.create(name="hundigruppe")
-        self.user.groups.add(self.group)
-        self.user.groups.add(AdministrativeStaffGroup)
-        self.admin.groups.add(InstanceAdminGroup)
+        self.group = TeamService.create(
+            self.admin, "Hunditeam", "fefecsdcsd", "jrnvnkrvnrk"
+        )
+        TeamMembershipService.add_member(
+            self.admin, team_id=self.group.id, key="dcdcd", invited_user_id=self.user.id
+        )
         self.form.teams.add(self.group)
         self.keypair = generate_test_keypair()
         self.first_key = EncryptionKey.objects.create(
@@ -58,7 +64,7 @@ class EncryptionKeyServiceTest(TestCase):
         key.active = True
         key.save()
         self.assertEqual(
-            len(FormService.retrieve_public_keys_for_form(self.form.id)), 2
+            len(FormService.retrieve_public_keys_for_form(self.form.id)), 1
         )
 
     def test_activate_key(self):
@@ -70,12 +76,12 @@ class EncryptionKeyServiceTest(TestCase):
         key = EncryptionKeyService.activate_key(self.admin, key.id)
 
         self.assertEqual(
-            len(FormService.retrieve_public_keys_for_form(self.form.id)), 2
+            len(FormService.retrieve_public_keys_for_form(self.form.id)), 1
         )
 
         key_two = EncryptionKeyService.add_key(self.user, "keeey")
         self.assertEqual(
-            len(FormService.retrieve_public_keys_for_form(self.form.id)), 2
+            len(FormService.retrieve_public_keys_for_form(self.form.id)), 1
         )
 
         with self.assertRaises(PermissionError):

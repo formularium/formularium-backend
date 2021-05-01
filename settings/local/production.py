@@ -4,7 +4,7 @@ import os
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.contrib.gis.db.backends.postgis",
+        "ENGINE": "django.db.backends.postgresql_psycopg2",
         "HOST": environ.get("RDS_DB_HOST"),
         "NAME": environ.get("RDS_DB_NAME"),
         "USER": environ.get("RDS_DB_USER"),

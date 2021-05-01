@@ -12,5 +12,5 @@ def pgp_signature_key(request):
 
 
 def home(request):
-    """serve 200 at / """
+    """serve 200 at /"""
     return HttpResponse("Hey there!", content_type="text/plain")
