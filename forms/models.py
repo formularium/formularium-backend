@@ -60,6 +60,28 @@ class FormSchemaTemplate(models.Model):
         return self.name
 
 
+class Team(models.Model):
+    name = models.CharField(max_length=100)
+    slug = models.SlugField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    public_key = models.TextField()
+
+
+class TeamRoleChoices(models.TextChoices):
+    MEMBER = "member", _("Member")
+    ADMIN = "admin", _("ADMIN")
+
+
+class TeamMembership(models.Model):
+    user = models.ForeignKey(
+        get_user_model(), on_delete=models.CASCADE, related_name="memberships"
+    )
+    team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name="members")
+    member_since = models.DateTimeField(auto_now_add=True)
+    role = models.CharField(choices=TeamRoleChoices.choices, max_length=9)
+    key = models.TextField()
+
+
 class Form(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
@@ -67,7 +89,7 @@ class Form(models.Model):
     js_code = models.TextField(blank=True)
     active = models.BooleanField(default=False)
     teams = models.ManyToManyField(
-        Group, related_name="forms"
+        Team, related_name="forms"
     )  # teams that can decrypt the submissions
 
     @property

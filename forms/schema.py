@@ -31,6 +31,8 @@ from forms.models import (
     FormSchema,
     FormTranslation,
     TranslationKey,
+    Team,
+    TeamMembership,
 )
 from forms.permissions import (
     CanRetrieveFormSubmissionsPermission,
@@ -38,8 +40,9 @@ from forms.permissions import (
     CanEditFormPermission,
     CanAddFormTranslationPermission,
 )
-from forms.services import (
+from forms.services.forms import (
     FormService,
+    FormServiceException,
     FormReceiverService,
     EncryptionKeyService,
     FormSchemaService,
@@ -73,6 +76,48 @@ class InternalFormNode(DjangoObjectType):
         except cls._meta.model.DoesNotExist:
             return None
         return item
+
+
+class InternalTeamNode(DjangoObjectType):
+    class Meta:
+        model = Team
+        filter_fields = ["id"]
+        interfaces = (relay.Node,)
+
+    @classmethod
+    @permissions_checker([IsAuthenticated])
+    def get_node(cls, info, id):
+        try:
+            item = Team.objects.filter(id=id).get()
+        except cls._meta.model.DoesNotExist:
+            return None
+        return item
+
+    @classmethod
+    @permissions_checker([IsAuthenticated])
+    def get_queryset(cls, queryset, info):
+        return queryset
+
+
+class InternalTeamMembershipNode(DjangoObjectType):
+    class Meta:
+        model = TeamMembership
+        filter_fields = ["id"]
+        interfaces = (relay.Node,)
+
+    @classmethod
+    @permissions_checker([IsAuthenticated])
+    def get_node(cls, info, id):
+        try:
+            item = TeamMembership.objects.filter(id=id).get()
+        except cls._meta.model.DoesNotExist:
+            return None
+        return item
+
+    @classmethod
+    @permissions_checker([IsAuthenticated])
+    def get_queryset(cls, queryset, info):
+        return queryset
 
 
 class FormSchemaNode(DjangoObjectType):
@@ -176,6 +221,11 @@ class Query(graphene.ObjectType):
     all_forms = DjangoFilterConnectionField(FormNode)
     # get a list of available form submissions
     all_form_submissions = DjangoFilterConnectionField(FormSubmissionNode)
+
+    # get a list of available teams
+    all_teams = DjangoFilterConnectionField(InternalTeamNode)
+    # get a list of available teams
+    team = relay.Node.Field(InternalTeamNode)
     # get public keys for form
     public_keys_for_form = graphene.List(
         EncryptionKeyNode, form_id=graphene.ID(required=True)

@@ -6,6 +6,8 @@ from forms.permissions import (
     CanActivateEncryptionKeyPermission,
     CanEditFormPermission,
     CanAddFormTranslationPermission,
+    CanRemoveTeamMemberPermission,
+    CanCreateTeamPermission,
 )
 
 
@@ -24,4 +26,6 @@ class InstanceAdminGroup(Group):
         CanActivateEncryptionKeyPermission,
         CanEditFormPermission,
         CanAddFormTranslationPermission,
+        CanRemoveTeamMemberPermission,
+        CanCreateTeamPermission,
     ]

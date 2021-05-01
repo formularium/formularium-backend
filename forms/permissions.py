@@ -1,6 +1,6 @@
 from serious_django_permissions.permissions import Permission
 
-from forms.models import FormSubmission, EncryptionKey, Form
+from forms.models import FormSubmission, EncryptionKey, Form, Team
 
 
 class CanRetrieveFormSubmissionsPermission(Permission):
@@ -58,6 +58,32 @@ class CanEditFormPermission(Permission):
 class CanAddFormTranslationPermission(Permission):
     model = Form
     description = "can add a new form translation"
+
+    @staticmethod
+    def has_permission(context):
+        return context.user.has_perm(Form)
+
+    @staticmethod
+    def has_object_permission(context, obj):
+        return True
+
+
+class CanCreateTeamPermission(Permission):
+    model = Team
+    description = "can create a new team"
+
+    @staticmethod
+    def has_permission(context):
+        return context.user.has_perm(Form)
+
+    @staticmethod
+    def has_object_permission(context, obj):
+        return True
+
+
+class CanRemoveTeamMemberPermission(Permission):
+    model = Team
+    description = "can remove team members from all teams"
 
     @staticmethod
     def has_permission(context):
