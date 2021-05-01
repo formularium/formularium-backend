@@ -206,6 +206,15 @@ class EncryptionKeyNode(DjangoObjectType):
         return queryset.filter(active=True)
 
 
+class InactiveEncryptionKeyNode(PermissionDjangoObjectType):
+    fingerprint = graphene.Field(graphene.String)
+
+    class Meta:
+        model = EncryptionKey
+        filter_fields = ["id"]
+        interfaces = (relay.Node,)
+
+
 class Query(graphene.ObjectType):
     # get a single form
     form = relay.Node.Field(FormNode)
@@ -227,6 +236,9 @@ class Query(graphene.ObjectType):
 
     # get all forms - also inactive, for the admin interface
     internal_form = relay.Node.Field(InternalFormNode)
+    all_inactive_encryption_keys = DjangoFilterConnectionField(
+        InactiveEncryptionKeyNode
+    )
     all_internal_forms = DjangoFilterConnectionField(InternalFormNode)
 
     form_schema = relay.Node.Field(FormSchemaNode)
@@ -241,6 +253,11 @@ class Query(graphene.ObjectType):
     def resolve_all_form_submissions(self, info, **kwargs):
         user = get_user_from_info(info)
         return FormReceiverService.retrieve_submitted_forms(user)
+
+    @permissions_checker([IsAuthenticated, CanActivateEncryptionKeyPermission])
+    def resolve_all_inactive_encryption_keys(self, info, **kwargs):
+        user = get_user_from_info(info)
+        return EncryptionKey.objects.filter(active=False)
 
     @permissions_checker([IsAuthenticated])
     def resolve_all_teams_(self, info, **kwargs):
