@@ -69,7 +69,7 @@ class Team(models.Model):
 
 class TeamRoleChoices(models.TextChoices):
     MEMBER = "member", _("Member")
-    ADMIN = "admin", _("ADMIN")
+    ADMIN = "admin", _("Admin")
 
 
 class TeamMembership(models.Model):

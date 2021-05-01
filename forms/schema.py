@@ -33,12 +33,14 @@ from forms.models import (
     TranslationKey,
     Team,
     TeamMembership,
+    TeamRoleChoices,
 )
 from forms.permissions import (
     CanRetrieveFormSubmissionsPermission,
     CanAddEncryptionKeyPermission,
     CanEditFormPermission,
     CanAddFormTranslationPermission,
+    CanActivateEncryptionKeyPermission,
 )
 from forms.services.forms import (
     FormService,
@@ -49,6 +51,8 @@ from forms.services.forms import (
     FormTranslationService,
 )
 from graphene_permissions.permissions import AllowAuthenticated
+
+from forms.services.teams import TeamService, TeamMembershipService
 
 
 class FormNode(DjangoObjectType):
@@ -93,11 +97,6 @@ class InternalTeamNode(DjangoObjectType):
             return None
         return item
 
-    @classmethod
-    @permissions_checker([IsAuthenticated])
-    def get_queryset(cls, queryset, info):
-        return queryset
-
 
 class InternalTeamMembershipNode(DjangoObjectType):
     class Meta:
@@ -113,11 +112,6 @@ class InternalTeamMembershipNode(DjangoObjectType):
         except cls._meta.model.DoesNotExist:
             return None
         return item
-
-    @classmethod
-    @permissions_checker([IsAuthenticated])
-    def get_queryset(cls, queryset, info):
-        return queryset
 
 
 class FormSchemaNode(DjangoObjectType):
@@ -248,6 +242,11 @@ class Query(graphene.ObjectType):
         user = get_user_from_info(info)
         return FormReceiverService.retrieve_submitted_forms(user)
 
+    @permissions_checker([IsAuthenticated])
+    def resolve_all_teams_(self, info, **kwargs):
+        user = get_user_from_info(info)
+        return Team.objects.all()
+
     @permissions_checker([IsAuthenticated, CanEditFormPermission])
     def resolve_all_internal_forms(self, info, **kwargs):
         user = get_user_from_info(info)
@@ -284,6 +283,24 @@ class SubmitEncryptionKey(FailableMutation):
         except EncryptionKeyService.exceptions as e:
             raise MutationExecutionException(str(e))
         return SubmitEncryptionKey(success=True, encryption_key=result)
+
+
+class ActivateEncryptionKey(FailableMutation):
+    encryption_key = graphene.Field(EncryptionKeyNode)
+
+    class Arguments:
+        public_key_id = graphene.ID(required=True)
+
+    @permissions_checker([IsAuthenticated, CanActivateEncryptionKeyPermission])
+    def mutate(self, info, public_key_id):
+        user = get_user_from_info(info)
+        try:
+            result = EncryptionKeyService.activate_key(
+                user, int(from_global_id(public_key_id[0]))
+            )
+        except EncryptionKeyService.exceptions as e:
+            raise MutationExecutionException(str(e))
+        return ActivateEncryptionKey(success=True, encryption_key=result)
 
 
 class CreateForm(FailableMutation):
@@ -344,6 +361,96 @@ class CreateFormTranslation(FailableMutation):
         except FormTranslationService.exceptions as e:
             raise MutationExecutionException(str(e))
         return CreateFormTranslation(success=True, form_translation=result)
+
+
+class CreateTeam(FailableMutation):
+    team = graphene.Field(InternalTeamNode)
+
+    class Arguments:
+        name = graphene.String(required=True)
+        public_key = graphene.String(required=True)
+        key = graphene.String(required=True)
+
+    @permissions_checker([IsAuthenticated, CanEditFormPermission])
+    def mutate(self, info, name, public_key, key):
+        user = get_user_from_info(info)
+        try:
+            result = TeamService.create(user, name=name, public_key=public_key, key=key)
+        except TeamService.exceptions as e:
+            raise MutationExecutionException(str(e))
+        return CreateTeam(success=True, team=result)
+
+
+TeamRoleChoicesSchema = graphene.Enum.from_enum(TeamRoleChoices)
+
+
+class AddTeamMember(FailableMutation):
+    membership = graphene.Field(InternalTeamMembershipNode)
+
+    class Arguments:
+        key = graphene.ID(required=True)
+        team_id = graphene.ID(required=True)
+        invited_user_id = graphene.ID(required=True)
+        role = TeamRoleChoicesSchema()
+
+    @permissions_checker([IsAuthenticated, CanEditFormPermission])
+    def mutate(self, info, key, team_id, invited_user_id, role):
+        user = get_user_from_info(info)
+        try:
+            result = TeamMembershipService.add_member(
+                user,
+                key=key,
+                team_id=int(from_global_id(team_id)[1]),
+                invited_user_id=int(from_global_id(invited_user_id)[1]),
+                role=role,
+            )
+        except TeamMembershipService.exceptions as e:
+            raise MutationExecutionException(str(e))
+        return AddTeamMember(success=True, membership=result)
+
+
+class UpdateTeamMember(FailableMutation):
+    membership = graphene.Field(InternalTeamMembershipNode)
+
+    class Arguments:
+        key = graphene.ID(required=True)
+        team_id = graphene.ID(required=True)
+        affected_user_id = graphene.ID(required=True)
+        role = TeamRoleChoicesSchema()
+
+    @permissions_checker([IsAuthenticated, CanEditFormPermission])
+    def mutate(self, info, key, team_id, affected_user_id, role):
+        user = get_user_from_info(info)
+        try:
+            result = TeamMembershipService.update_member(
+                user,
+                key=key,
+                team_id=int(from_global_id(team_id)[1]),
+                affected_user_id=int(from_global_id(affected_user_id)[1]),
+                role=role,
+            )
+        except TeamMembershipService.exceptions as e:
+            raise MutationExecutionException(str(e))
+        return UpdateTeamMember(success=True, membership=result)
+
+
+class RemoveTeamMember(FailableMutation):
+    class Arguments:
+        team_id = graphene.ID(required=True)
+        affected_user_id = graphene.ID(required=True)
+
+    @permissions_checker([IsAuthenticated, CanEditFormPermission])
+    def mutate(self, info, team_id, affected_user_id):
+        user = get_user_from_info(info)
+        try:
+            result = TeamMembershipService.remove_member(
+                user,
+                team_id=int(from_global_id(team_id)[1]),
+                affected_user_id=int(from_global_id(affected_user_id)[1]),
+            )
+        except TeamMembershipService.exceptions as e:
+            raise MutationExecutionException(str(e))
+        return RemoveTeamMember(success=True)
 
 
 class CreateOrUpdateFormSchema(FailableMutation):
@@ -472,6 +579,7 @@ class UpdateForm(FailableMutation):
 class Mutation(graphene.ObjectType):
     submit_form = SubmitForm.Field()
     submit_encryption_key = SubmitEncryptionKey.Field()
+    activate_encryption_key = ActivateEncryptionKey.Field()
     create_form_schema = CreateFormSchema.Field()
     update_form_schema = UpdateFormSchema.Field()
     create_form = CreateForm.Field()
@@ -480,6 +588,11 @@ class Mutation(graphene.ObjectType):
     update_form_translation = UpdateFormTranslation.Field()
     update_form_translation_key = UpdateFormTranslationKey.Field()
     create_or_update_schema = CreateOrUpdateFormSchema.Field()
+
+    create_team = CreateTeam.Field()
+    add_team_member = AddTeamMember.Field()
+    update_team_member = UpdateTeamMember.Field()
+    remove_team_member = RemoveTeamMember.Field()
 
 
 ## Schema

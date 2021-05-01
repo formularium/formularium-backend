@@ -8,6 +8,8 @@ from forms.models import (
     FormSchemaTemplate,
     FormTranslation,
     TranslationKey,
+    TeamMembership,
+    Team,
 )
 
 admin.site.register(EncryptionKey)
@@ -21,8 +23,17 @@ class TranslationKeyInline(admin.TabularInline):
     model = TranslationKey
 
 
+class TeamMembershipInline(admin.TabularInline):
+    model = TeamMembership
+
+
 class FormTranslationAdmin(admin.ModelAdmin):
     inlines = [TranslationKeyInline]
 
 
+class TeamAdmin(admin.ModelAdmin):
+    inlines = [TeamMembershipInline]
+
+
 admin.site.register(FormTranslation, FormTranslationAdmin)
+admin.site.register(Team, TeamAdmin)

@@ -28,6 +28,7 @@ class TeamService(Service, CRUDMixin):
     def create(cls, user: AbstractUser, name: str, key: str, public_key: str) -> Team:
         """
         creates a new user and makes them admin
+        :param public_key: public key for this team
         :param user: user calling the service (needs CanCreateTeamPermission permission)
         :param name: name of the Team
         :param key: the newly generated public key

@@ -465,7 +465,7 @@ class EncryptionKeyService(Service):
         )
 
     @classmethod
-    def activate_key(cls, user: AbstractUser, public_key_id) -> EncryptionKey:
+    def activate_key(cls, user: AbstractUser, public_key_id: int) -> EncryptionKey:
         """
         activate a submitted public key, so that newly generated forms use this key for encryption
         :param user: the user calling the service
