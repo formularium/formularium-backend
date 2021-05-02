@@ -41,6 +41,7 @@ from forms.permissions import (
     CanEditFormPermission,
     CanAddFormTranslationPermission,
     CanActivateEncryptionKeyPermission,
+    CanCreateTeamPermission,
 )
 from forms.services.forms import (
     FormService,
@@ -404,7 +405,7 @@ class CreateTeam(FailableMutation):
         public_key = graphene.String(required=True)
         key = graphene.String(required=True)
 
-    @permissions_checker([IsAuthenticated, CanEditFormPermission])
+    @permissions_checker([IsAuthenticated, CanCreateTeamPermission])
     def mutate(self, info, name, public_key, key):
         user = get_user_from_info(info)
         try:
@@ -412,6 +413,25 @@ class CreateTeam(FailableMutation):
         except TeamService.exceptions as e:
             raise MutationExecutionException(str(e))
         return CreateTeam(success=True, team=result)
+
+
+class AddCertificateForTeam(FailableMutation):
+    team = graphene.Field(InternalTeamNode)
+
+    class Arguments:
+        certificate = graphene.String(required=True)
+        team_id = graphene.ID(required=True)
+
+    @permissions_checker([IsAuthenticated, CanCreateTeamPermission])
+    def mutate(self, info, certificate, team_id):
+        user = get_user_from_info(info)
+        try:
+            result = TeamService.add_certificate(
+                user, certificate=certificate, team_id=team_id
+            )
+        except TeamService.exceptions as e:
+            raise MutationExecutionException(str(e))
+        return AddCertificateForTeam(success=True, team=result)
 
 
 TeamRoleChoicesSchema = graphene.Enum.from_enum(TeamRoleChoices)
@@ -624,6 +644,7 @@ class Mutation(graphene.ObjectType):
     create_or_update_schema = CreateOrUpdateFormSchema.Field()
 
     create_team = CreateTeam.Field()
+    add_certificate_for_team = AddCertificateForTeam.Field()
     add_team_member = AddTeamMember.Field()
     update_team_member = UpdateTeamMember.Field()
     remove_team_member = RemoveTeamMember.Field()

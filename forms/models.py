@@ -15,6 +15,7 @@ class EncryptionKey(models.Model):
     )
     public_key = models.TextField()
     active = models.BooleanField()
+    created_at = models.DateTimeField(auto_now_add=True)
 
     @property
     def fingerprint(self) -> str:
@@ -60,11 +61,19 @@ class FormSchemaTemplate(models.Model):
         return self.name
 
 
+class TeamStatus(models.TextChoices):
+    ACTIVE = "active", _("active")
+    WAITING_FOR_CERTIFICATE = "waiting for certificate", _("waiting for certificate")
+
+
 class Team(models.Model):
     name = models.CharField(max_length=100)
     slug = models.SlugField()
     created_at = models.DateTimeField(auto_now_add=True)
     public_key = models.TextField()
+    csr = models.TextField()
+    certificate = models.TextField()
+    status = models.CharField(choices=TeamStatus.choices, max_length=30)
 
 
 class TeamRoleChoices(models.TextChoices):
@@ -80,6 +89,7 @@ class TeamMembership(models.Model):
     member_since = models.DateTimeField(auto_now_add=True)
     role = models.CharField(choices=TeamRoleChoices.choices, max_length=9)
     key = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
 
 
 class Form(models.Model):

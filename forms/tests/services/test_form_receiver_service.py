@@ -40,7 +40,7 @@ class FormReceiverServiceTest(TestCase):
 
         # create a group and add a form/user to it
         self.group = TeamService.create(
-            self.admin, "Hunditeam", "fefecsdcsd", "jrnvnkrvnrk"
+            self.admin, "Hunditeam", "fefecsdcsd", "jrnvnkrvnrk", "dcbhb"
         )
         TeamMembershipService.add_member(
             self.admin, team_id=self.group.id, key="dcdcd", invited_user_id=self.user.id
@@ -62,7 +62,7 @@ class FormReceiverServiceTest(TestCase):
         )
         # create a group and add a form/user to it
         self.second_group = TeamService.create(
-            self.admin, "andre", "fefecsdcsd", "jrnvnkrvnrk"
+            self.admin, "andre", "fefecsdcsd", "jrnvnkrvnrk", "dcbhb"
         )
         self.second_form.teams.add(self.second_group)
         self.second_form_submission = FormService.submit(

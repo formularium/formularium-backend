@@ -8,7 +8,7 @@ from forms.forms import (
     CreateTeamMembershipForm,
     UpdateTeamMembershipForm,
 )
-from forms.models import Team, TeamRoleChoices, TeamMembership
+from forms.models import Team, TeamRoleChoices, TeamMembership, TeamStatus
 from forms.permissions import CanCreateTeamPermission, CanRemoveTeamMemberPermission
 
 
@@ -25,9 +25,12 @@ class TeamService(Service, CRUDMixin):
     model = Team
 
     @classmethod
-    def create(cls, user: AbstractUser, name: str, key: str, public_key: str) -> Team:
+    def create(
+        cls, user: AbstractUser, name: str, key: str, public_key: str, csr: str
+    ) -> Team:
         """
         creates a new user and makes them admin
+        :param csr: the certificate request
         :param public_key: public key for this team
         :param user: user calling the service (needs CanCreateTeamPermission permission)
         :param name: name of the Team
@@ -40,7 +43,13 @@ class TeamService(Service, CRUDMixin):
             )
 
         team = cls._create(
-            {"name": name, "slug": slugify(name), "public_key": public_key}
+            {
+                "name": name,
+                "slug": slugify(name),
+                "public_key": public_key,
+                "csr": csr,
+                "status": TeamStatus.WAITING_FOR_CERTIFICATE,
+            }
         )
 
         TeamMembershipService.add_member(
@@ -49,6 +58,25 @@ class TeamService(Service, CRUDMixin):
             key=key,
             invited_user_id=user.id,
             role=TeamRoleChoices.ADMIN,
+        )
+        return team
+
+    @classmethod
+    def add_certificate(cls, user, team_id: int, certificate: str):
+        """
+        add the signed certificate to the team
+        :param user: user calling the service
+        :param team_id: id of the team
+        :param certificate: the signed certificate
+        :return: team object
+        """
+        if not user.has_perm(CanCreateTeamPermission):
+            raise TeamServiceException(
+                "You don't have the permission to create a new team"
+            )
+
+        team = cls._update(
+            team_id, {"certificate": certificate, "status": TeamStatus.ACTIVE}
         )
         return team
 

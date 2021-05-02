@@ -61,24 +61,19 @@ class UpdateTranslationKeyForm(forms.ModelForm):
 class CreateTeamForm(forms.ModelForm):
     class Meta:
         model = Team
-        fields = ["name", "slug", "public_key"]
+        fields = ["name", "slug", "public_key", "csr", "status"]
 
 
 class UpdateTeamForm(forms.ModelForm):
     class Meta:
         model = Team
-        fields = ["name", "public_key"]
+        fields = ["certificate", "status"]
 
 
 class CreateTeamMembershipForm(forms.ModelForm):
     class Meta:
         model = TeamMembership
-        fields = [
-            "user",
-            "team",
-            "role",
-            "key",
-        ]
+        fields = ["user", "team", "role", "key"]
 
 
 class UpdateTeamMembershipForm(forms.ModelForm):
