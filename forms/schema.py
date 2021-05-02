@@ -404,12 +404,15 @@ class CreateTeam(FailableMutation):
         name = graphene.String(required=True)
         public_key = graphene.String(required=True)
         key = graphene.String(required=True)
+        csr = graphene.String(required=True)
 
     @permissions_checker([IsAuthenticated, CanCreateTeamPermission])
-    def mutate(self, info, name, public_key, key):
+    def mutate(self, info, name, public_key, key, csr):
         user = get_user_from_info(info)
         try:
-            result = TeamService.create(user, name=name, public_key=public_key, key=key)
+            result = TeamService.create(
+                user, name=name, public_key=public_key, key=key, csr=csr
+            )
         except TeamService.exceptions as e:
             raise MutationExecutionException(str(e))
         return CreateTeam(success=True, team=result)
