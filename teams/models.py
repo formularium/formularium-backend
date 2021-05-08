@@ -1,9 +1,11 @@
+from django.conf import settings
 from django.db import models
 from django.db.models import Q
 from django.contrib.auth import get_user_model
 from django.utils.translation import gettext_lazy as _
 
 # Create your models here.
+from teams.utils import cert_to_jwk
 
 
 class TeamStatus(models.TextChoices):
@@ -17,9 +19,19 @@ class Team(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     @property
-    def public_key(self):
+    def domain(self) -> str:
+        return f"{self.slug}.{settings.CERTIFICATE_DOMAIN}"
+
+    @property
+    def public_key(self) -> str:
         # TODO: this is an ugly hack til refactoring is done
-        return self.certificates.filter(status=TeamStatus.ACTIVE).first().public_key
+        certificate = self.certificates.filter(status=TeamStatus.ACTIVE).first()
+        if certificate.certificate is not None:
+            return cert_to_jwk(certificate.certificate, certificate.public_key)
+        return certificate.public_key
+
+    def __str__(self):
+        return self.name
 
 
 class TeamCertificate(models.Model):
@@ -35,14 +47,6 @@ class TeamCertificate(models.Model):
         max_length=30,
     )
     created_at = models.DateTimeField(auto_now_add=True)
-
-
-class TeamACMEAccount(models.Model):
-    team = models.OneToOneField(
-        Team, on_delete=models.CASCADE, related_name="acme_account"
-    )
-    email = models.CharField(max_length=255)
-    jwk = models.TextField()
 
 
 class TeamRoleChoices(models.TextChoices):
