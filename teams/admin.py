@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 # Register your models here.
-from teams.models import Team, TeamMembership
+from teams.models import Team, TeamMembership, TeamCertificate
 
 
 class TeamMembershipInline(admin.TabularInline):
@@ -13,3 +13,4 @@ class TeamAdmin(admin.ModelAdmin):
 
 
 admin.site.register(Team, TeamAdmin)
+admin.site.register(TeamCertificate)
