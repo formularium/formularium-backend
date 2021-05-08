@@ -35,8 +35,10 @@ jobs:
         if: steps.wait-build.outputs.conclusion == 'timed_out'
         run: echo Timeout && false # fail if build time out
 
-      - name: Generate deployment package
+      - name: Checkout source code
         uses: actions/checkout@v1
+
+      - name: Generate deployment package
         run: zip -r deploy.zip . -x '*.git*'
 
       - name: Deploy to EB
