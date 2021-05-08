@@ -1,0 +1,51 @@
+name: Deploy master
+
+on:
+  push:
+    branches:
+    - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait my build
+        uses: tomchv/wait-my-workflow@v1.1.0
+        id: wait-build
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          checkName: unittest
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          intervalSeconds: 10
+          timeoutSeconds: 400
+
+      - name: Do something if build success
+        if: steps.wait-build.outputs.conclusion == 'success'
+        run: echo success && true # You can also just continue with
+
+      - name: Do something if build isn't launch
+        if: steps.wait-build.outputs.conclusion == 'does not exist'
+        run: echo job does not exist && true
+
+      - name: Do something if build fail
+        if: steps.wait-build.outputs.conclusion == 'failure'
+        run: echo fail && false # fail if build fail
+
+      - name: Do something if build timeout
+        if: steps.wait-build.outputs.conclusion == 'timed_out'
+        run: echo Timeout && false # fail if build time out
+
+      - name: Deploy my app
+        uses: actions/checkout@v1
+          - name: Generate deployment package
+            run: zip -r deploy.zip . -x '*.git*'
+
+          - name: Deploy to EB
+            uses: einaregilsson/beanstalk-deploy@v16
+            with:
+              aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+              aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+              application_name: Formularium
+              environment_name: Formularium-dev
+              region: eu-central-1
+              deployment_package: deploy.zip
