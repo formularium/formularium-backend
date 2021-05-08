@@ -247,6 +247,14 @@ class TeamCertificateService(Service):
     def create_certificate(
         cls, team: Team, csr: str, public_key: str, contact_email: str
     ):
+        """
+        generate a new certificate for a team based on a csr
+        :param team: the teamobject the certificate should be generated for
+        :param csr: the csr request
+        :param public_key: the public key for the csr
+        :param contact_email: the contact email mentioned in the csr
+        :return: the certificate object
+        """
         cert = TeamCertificate.objects.create(team=team, public_key=public_key, csr=csr)
         if settings.TESTING:
             cert.status = TeamStatus.ACTIVE
@@ -271,7 +279,12 @@ class ACMEService(Service):
     def __init__(self, client):
         self.client = client
 
-    def new_order(self, csr):
+    def new_order(self, csr: str):
+        """
+        create a new acme order
+        :param csr: the csr
+        :return: returs the challenge, the response
+        """
         self.order = self.client.new_order(csr)
         self.challenge = self.select_http01_challenge()
         self.response, validation = self.challenge.response_and_validation(
@@ -281,6 +294,7 @@ class ACMEService(Service):
         return self.challenge.path.split("/")[-1], validation
 
     def retrieve_certificate(self):
+        """retrieve the certificate after we provided the challenge response"""
         self.client.answer_challenge(self.challenge, self.response)
 
         # Wait for challenge status and then issue a certificate.
@@ -291,11 +305,18 @@ class ACMEService(Service):
 
     @classmethod
     def _get_directory(cls, directory_url):
+        """fetches the directory information
+        :return: the Directory` object
+        """
         directory = requests.get(directory_url)
         return Directory(directory.json())
 
     @classmethod
     def _generate_keypair(cls):
+        """
+        generate the jwk keypair for the key request
+        :return: the JWKRSA object
+        """
         rsa_key = generate_private_key(
             public_exponent=65537, key_size=4096, backend=default_backend()
         )
@@ -307,6 +328,12 @@ class ACMEService(Service):
         email: str,
         directory_url: str = "https://acme-v02.api.letsencrypt.org/directory",
     ):
+        """
+        create a new acme account
+        :param email: the email address that should be used for the account
+        :param directory_url: the url of the acme directory that should be used
+        :return: a new ACME client instance
+        """
         keypair = cls._generate_keypair()
         client_network = ClientNetwork(keypair)
         directory = cls._get_directory(directory_url)

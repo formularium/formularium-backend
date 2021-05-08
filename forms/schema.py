@@ -38,7 +38,6 @@ from forms.permissions import (
     CanEditFormPermission,
     CanAddFormTranslationPermission,
     CanActivateEncryptionKeyPermission,
-    CanCreateTeamPermission,
 )
 from forms.services.forms import (
     FormService,

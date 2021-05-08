@@ -15,9 +15,8 @@ from graphql_relay.node.node import from_global_id
 from graphql_relay.node.node import from_global_id
 from graphene_django.filter import DjangoFilterConnectionField
 
-
-from forms.permissions import (
-    CanEditFormPermission,
+from forms.permissions import CanEditFormPermission
+from teams.permissions import (
     CanCreateTeamPermission,
 )
 from teams.models import Team, TeamMembership, TeamRoleChoices
