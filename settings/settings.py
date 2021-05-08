@@ -9,6 +9,7 @@ https://docs.djangoproject.com/en/3.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/3.1/ref/settings/
 """
+import sys
 
 from pathlib import Path
 
@@ -46,12 +47,14 @@ INSTALLED_APPS = [
     "serious_django_graphene",
     "oauth2_provider",
     "crispy_forms",
+    "letsencrypt",
     # cors
     "corsheaders",
     # i18n language model field
     "languages",
     "oauth",
     "forms",
+    "teams",
 ]
 
 MIDDLEWARE = [
@@ -70,6 +73,8 @@ MIDDLEWARE = [
 CORS_ALLOW_ALL_ORIGINS = True
 
 ROOT_URLCONF = "settings.urls"
+
+TESTING = sys.argv[1:2] == ["test"]
 
 TEMPLATES = [
     {

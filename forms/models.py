@@ -8,6 +8,8 @@ from django.utils.translation import gettext_lazy as _
 from languages.languages import LANGUAGES
 from languages.regions import REGIONS
 
+from teams.models import Team
+
 
 class EncryptionKey(models.Model):
     user = models.ForeignKey(
@@ -59,37 +61,6 @@ class FormSchemaTemplate(models.Model):
 
     def __str__(self):
         return self.name
-
-
-class TeamStatus(models.TextChoices):
-    ACTIVE = "active", _("active")
-    WAITING_FOR_CERTIFICATE = "waiting for certificate", _("waiting for certificate")
-
-
-class Team(models.Model):
-    name = models.CharField(max_length=100)
-    slug = models.SlugField()
-    created_at = models.DateTimeField(auto_now_add=True)
-    public_key = models.TextField()
-    csr = models.TextField()
-    certificate = models.TextField()
-    status = models.CharField(choices=TeamStatus.choices, max_length=30)
-
-
-class TeamRoleChoices(models.TextChoices):
-    MEMBER = "member", _("Member")
-    ADMIN = "admin", _("Admin")
-
-
-class TeamMembership(models.Model):
-    user = models.ForeignKey(
-        get_user_model(), on_delete=models.CASCADE, related_name="memberships"
-    )
-    team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name="members")
-    member_since = models.DateTimeField(auto_now_add=True)
-    role = models.CharField(choices=TeamRoleChoices.choices, max_length=9)
-    key = models.TextField()
-    created_at = models.DateTimeField(auto_now_add=True)
 
 
 class Form(models.Model):

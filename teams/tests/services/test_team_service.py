@@ -3,8 +3,8 @@ from django.test import TestCase, RequestFactory
 from django.contrib.auth import get_user_model
 from serious_django_permissions.management.commands import create_groups
 
-from forms.models import TeamRoleChoices
-from forms.services.teams import (
+from teams.models import TeamRoleChoices
+from teams.services import (
     TeamService,
     TeamServiceException,
     TeamMembershipService,

@@ -16,7 +16,7 @@ from forms.services.forms import (
     EncryptionKeyService,
     FormSchemaService,
 )
-from forms.services.teams import TeamService, TeamMembershipService
+from teams.services import TeamService, TeamMembershipService
 from settings.default_groups import AdministrativeStaffGroup, InstanceAdminGroup
 from ...management.commands import create_signature_key
 from ..utils import generate_test_keypair

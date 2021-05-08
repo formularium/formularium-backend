@@ -41,3 +41,5 @@ black = {git = "git://github.com/psf/black"}
 pre-commit = "*"
 pytest = "*"
 coverage = "*"
+django-letsencrypt = "*"
+certbot = "*"

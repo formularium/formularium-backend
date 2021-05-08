@@ -51,4 +51,5 @@ urlpatterns = [
     path(r"oauth/", include(("oauth.urls", "oauth"), namespace="oauth2_provider")),
     path("accounts/", include("django.contrib.auth.urls")),
     path("", home),
+    path("^\.well-known/", include("letsencrypt.urls")),
 ]

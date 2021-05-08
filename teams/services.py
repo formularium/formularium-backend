@@ -1,15 +1,33 @@
+import josepy
+import json
+import requests
+from acme import challenges
+from acme.client import ClientV2, ClientNetwork
+from acme.messages import Directory, Registration
+from certbot._internal.client import acme_from_config_key
+from cryptography.hazmat.backends import default_backend
 from django.contrib.auth.models import AbstractUser
 from django.utils.text import slugify
+from josepy import JWKRSA
+from letsencrypt.models import AcmeChallenge
 from serious_django_services import Service, CRUDMixin, NotPassed
+from cryptography.hazmat.primitives.asymmetric.rsa import generate_private_key
+from django.conf import settings
 
-from forms.forms import (
+from teams.forms import (
     CreateTeamForm,
     UpdateTeamForm,
     CreateTeamMembershipForm,
     UpdateTeamMembershipForm,
 )
-from forms.models import Team, TeamRoleChoices, TeamMembership, TeamStatus
-from forms.permissions import CanCreateTeamPermission, CanRemoveTeamMemberPermission
+from teams.models import (
+    Team,
+    TeamRoleChoices,
+    TeamMembership,
+    TeamStatus,
+    TeamCertificate,
+)
+from teams.permissions import CanCreateTeamPermission, CanRemoveTeamMemberPermission
 
 
 class TeamServiceException(Exception):
@@ -42,15 +60,9 @@ class TeamService(Service, CRUDMixin):
                 "You don't have the permission to create a new team"
             )
 
-        team = cls._create(
-            {
-                "name": name,
-                "slug": slugify(name),
-                "public_key": public_key,
-                "csr": csr,
-                "status": TeamStatus.WAITING_FOR_CERTIFICATE,
-            }
-        )
+        team = cls._create({"name": name, "slug": slugify(name)})
+
+        TeamCertificateService.create_certificate(team, csr, public_key, user.email)
 
         TeamMembershipService.add_member(
             user=user,
@@ -226,3 +238,95 @@ class TeamMembershipService(Service, CRUDMixin):
             )
 
         return cls._delete(membership.id)
+
+
+class TeamCertificateService(Service):
+    service_exceptions = (TeamServiceException,)
+
+    @classmethod
+    def create_certificate(
+        cls, team: Team, csr: str, public_key: str, contact_email: str
+    ):
+        cert = TeamCertificate.objects.create(team=team, public_key=public_key, csr=csr)
+        if settings.TESTING:
+            cert.status = TeamStatus.ACTIVE
+            cert.save()
+            return cert.public_key
+        acme = ACMEService.register_account(contact_email)
+        challenge, validation = acme.new_order(csr)
+        challenge = AcmeChallenge.objects.create(
+            challenge=challenge, response=validation
+        )
+        pem = acme.retrieve_certificate()
+        cert.certificate = pem
+        cert.status = TeamStatus.ACTIVE
+        cert.save()
+        return cert
+
+
+# inspired by https://github.com/certbot/certbot/blob/2622a700e0a83e0de0994c970929b624b98dad40/acme/examples/http01_example.py#L67
+class ACMEService(Service):
+    service_exceptions = (TeamServiceException,)
+
+    def __init__(self, client):
+        self.client = client
+
+    def new_order(self, csr):
+        self.order = self.client.new_order(csr)
+        self.challenge = self.select_http01_challenge()
+        self.response, validation = self.challenge.response_and_validation(
+            self.client.net.key
+        )
+
+        return self.challenge.path.split("/")[-1], validation
+
+    def retrieve_certificate(self):
+        self.client.answer_challenge(self.challenge, self.response)
+
+        # Wait for challenge status and then issue a certificate.
+        # It is possible to set a deadline time.
+        finalized_order = self.client.poll_and_finalize(self.order)
+
+        return finalized_order.fullchain_pem
+
+    @classmethod
+    def _get_directory(cls, directory_url):
+        directory = requests.get(directory_url)
+        return Directory(directory.json())
+
+    @classmethod
+    def _generate_keypair(cls):
+        rsa_key = generate_private_key(
+            public_exponent=65537, key_size=4096, backend=default_backend()
+        )
+        return josepy.JWKRSA(key=josepy.ComparableRSAKey(rsa_key))
+
+    @classmethod
+    def register_account(
+        cls,
+        email: str,
+        directory_url: str = "https://acme-v02.api.letsencrypt.org/directory",
+    ):
+        keypair = cls._generate_keypair()
+        client_network = ClientNetwork(keypair)
+        directory = cls._get_directory(directory_url)
+        registration = Registration.from_data(email=email, terms_of_service_agreed=True)
+        client = ClientV2(directory, client_network)
+        result = client.new_account(registration)
+        return ACMEService(client)
+
+    def select_http01_challenge(self):
+        """Extract authorization resource from within order resource."""
+        # Authorization Resource: authz.
+        # This object holds the offered challenges by the server and their status.
+        authz_list = self.order.authorizations
+
+        for authz in authz_list:
+            # Choosing challenge.
+            # authz.body.challenges is a set of ChallengeBody objects.
+            for i in authz.body.challenges:
+                # Find the supported challenge.
+                if isinstance(i.chall, challenges.HTTP01):
+                    return i
+
+        raise Exception("HTTP-01 challenge was not offered by the CA server.")

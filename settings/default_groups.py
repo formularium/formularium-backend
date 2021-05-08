@@ -6,9 +6,8 @@ from forms.permissions import (
     CanActivateEncryptionKeyPermission,
     CanEditFormPermission,
     CanAddFormTranslationPermission,
-    CanRemoveTeamMemberPermission,
-    CanCreateTeamPermission,
 )
+from teams.permissions import CanCreateTeamPermission, CanRemoveTeamMemberPermission
 
 
 class AdministrativeStaffGroup(Group):
