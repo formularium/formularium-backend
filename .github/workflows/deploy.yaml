@@ -35,17 +35,16 @@ jobs:
         if: steps.wait-build.outputs.conclusion == 'timed_out'
         run: echo Timeout && false # fail if build time out
 
-      - name: Deploy my app
+      - name: Generate deployment package
         uses: actions/checkout@v1
-          - name: Generate deployment package
-            run: zip -r deploy.zip . -x '*.git*'
+        run: zip -r deploy.zip . -x '*.git*'
 
-          - name: Deploy to EB
-            uses: einaregilsson/beanstalk-deploy@v16
-            with:
-              aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
-              aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-              application_name: Formularium
-              environment_name: Formularium-dev
-              region: eu-central-1
-              deployment_package: deploy.zip
+      - name: Deploy to EB
+        uses: einaregilsson/beanstalk-deploy@v16
+        with:
+          aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          application_name: Formularium
+          environment_name: Formularium-dev
+          region: eu-central-1
+          deployment_package: deploy.zip
