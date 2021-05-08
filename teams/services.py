@@ -43,9 +43,7 @@ class TeamService(Service, CRUDMixin):
     model = Team
 
     @classmethod
-    def create(
-        cls, user: AbstractUser, name: str, key: str, public_key: str, csr: str
-    ) -> Team:
+    def create(cls, user: AbstractUser, name: str, key: str) -> Team:
         """
         creates a new user and makes them admin
         :param csr: the certificate request
@@ -62,8 +60,6 @@ class TeamService(Service, CRUDMixin):
 
         team = cls._create({"name": name, "slug": slugify(name)})
 
-        TeamCertificateService.create_certificate(team, csr, public_key, user.email)
-
         TeamMembershipService.add_member(
             user=user,
             team_id=team.id,
@@ -74,12 +70,13 @@ class TeamService(Service, CRUDMixin):
         return team
 
     @classmethod
-    def add_certificate(cls, user, team_id: int, certificate: str):
+    def add_csr(cls, user, team_id: int, csr: str, public_key: str):
         """
         add the signed certificate to the team
         :param user: user calling the service
         :param team_id: id of the team
-        :param certificate: the signed certificate
+        :param csr: the certificate request
+        :param public_key: the public_key
         :return: team object
         """
         if not user.has_perm(CanCreateTeamPermission):
@@ -87,9 +84,9 @@ class TeamService(Service, CRUDMixin):
                 "You don't have the permission to create a new team"
             )
 
-        team = cls._update(
-            team_id, {"certificate": certificate, "status": TeamStatus.ACTIVE}
-        )
+        team = cls.retrieve(user, team_id)
+        TeamCertificateService.create_certificate(team, csr, public_key, user.email)
+
         return team
 
     @classmethod

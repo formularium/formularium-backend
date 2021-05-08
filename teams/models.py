@@ -24,11 +24,10 @@ class Team(models.Model):
 
     @property
     def public_key(self) -> str:
-        # TODO: this is an ugly hack til refactoring is done
         certificate = self.certificates.filter(status=TeamStatus.ACTIVE).first()
-        if certificate.certificate is not None:
+        if certificate:
             return cert_to_jwk(certificate.certificate, certificate.public_key)
-        return certificate.public_key
+        return None
 
     def __str__(self):
         return self.name
@@ -48,6 +47,9 @@ class TeamCertificate(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
+    def __str__(self):
+        return f"{self.team} ({self.status})"
+
 
 class TeamRoleChoices(models.TextChoices):
     MEMBER = "member", _("Member")
@@ -63,3 +65,6 @@ class TeamMembership(models.Model):
     role = models.CharField(choices=TeamRoleChoices.choices, max_length=9)
     key = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.team} - {self.user}"

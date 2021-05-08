@@ -18,6 +18,7 @@ from forms.services.forms import (
 )
 from teams.services import TeamService, TeamMembershipService
 from settings.default_groups import AdministrativeStaffGroup, InstanceAdminGroup
+from teams.tests.services.mock import create_mock_cert
 from ...management.commands import create_signature_key
 from ..utils import generate_test_keypair
 
@@ -40,9 +41,8 @@ class FormServiceTest(TestCase):
         )
 
         # create a group and add a form/user to it
-        self.group = TeamService.create(
-            self.admin, "Hunditeam", "fefecsdcsd", "jrnvnkrvnrk", "dcbhb"
-        )
+        self.group = TeamService.create(self.admin, "Hunditeam", "fefecsdcsd")
+        create_mock_cert(self.group)
         TeamMembershipService.add_member(
             self.admin, team_id=self.group.id, key="dcdcd", invited_user_id=self.user.id
         )
@@ -162,9 +162,8 @@ class FormServiceTest(TestCase):
         )
         self.assertEqual(form.xml_code, "<xml></xml>")
 
-        grp = TeamService.create(
-            self.admin, name="yolo", public_key="vfvf", key="fvrv", csr="dcbhb"
-        )
+        grp = TeamService.create(self.admin, name="yolo", key="fvrv")
+        create_mock_cert(grp)
 
         form = FormService.update_form_teams(self.admin, form.pk, [self.group.pk])
         self.assertEqual(form.teams.first(), self.group)

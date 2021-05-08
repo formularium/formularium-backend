@@ -19,7 +19,7 @@ from forms.permissions import CanEditFormPermission
 from teams.permissions import (
     CanCreateTeamPermission,
 )
-from teams.models import Team, TeamMembership, TeamRoleChoices
+from teams.models import Team, TeamMembership, TeamRoleChoices, TeamCertificate
 
 from teams.services import TeamService, TeamMembershipService
 
@@ -31,6 +31,10 @@ from serious_django_graphene import (
 
 
 class InternalTeamNode(DjangoObjectType):
+
+    domain = graphene.Field(graphene.String)
+    public_key = graphene.Field(graphene.String)
+
     class Meta:
         model = Team
         filter_fields = ["id"]
@@ -41,6 +45,22 @@ class InternalTeamNode(DjangoObjectType):
     def get_node(cls, info, id):
         try:
             item = Team.objects.filter(id=id).get()
+        except cls._meta.model.DoesNotExist:
+            return None
+        return item
+
+
+class InternalTeamCertificateNode(DjangoObjectType):
+    class Meta:
+        model = TeamCertificate
+        filter_fields = ["id"]
+        interfaces = (relay.Node,)
+
+    @classmethod
+    @permissions_checker([IsAuthenticated])
+    def get_node(cls, info, id):
+        try:
+            item = TeamCertificate.objects.filter(id=id).get()
         except cls._meta.model.DoesNotExist:
             return None
         return item
@@ -79,39 +99,39 @@ class CreateTeam(FailableMutation):
 
     class Arguments:
         name = graphene.String(required=True)
-        public_key = graphene.String(required=True)
         key = graphene.String(required=True)
-        csr = graphene.String(required=True)
 
     @permissions_checker([IsAuthenticated, CanCreateTeamPermission])
-    def mutate(self, info, name, public_key, key, csr):
+    def mutate(self, info, name, key):
         user = get_user_from_info(info)
         try:
-            result = TeamService.create(
-                user, name=name, public_key=public_key, key=key, csr=csr
-            )
+            result = TeamService.create(user, name=name, key=key)
         except TeamService.exceptions as e:
             raise MutationExecutionException(str(e))
         return CreateTeam(success=True, team=result)
 
 
-class AddCertificateForTeam(FailableMutation):
+class AddCSRForTeam(FailableMutation):
     team = graphene.Field(InternalTeamNode)
 
     class Arguments:
-        certificate = graphene.String(required=True)
+        public_key = graphene.String(required=True)
+        csr = graphene.String(required=True)
         team_id = graphene.ID(required=True)
 
     @permissions_checker([IsAuthenticated, CanCreateTeamPermission])
-    def mutate(self, info, certificate, team_id):
+    def mutate(self, info, public_key, csr, team_id):
         user = get_user_from_info(info)
         try:
-            result = TeamService.add_certificate(
-                user, certificate=certificate, team_id=team_id
+            result = TeamService.add_csr(
+                user,
+                team_id=int(from_global_id(team_id)[1]),
+                public_key=public_key,
+                csr=csr,
             )
         except TeamService.exceptions as e:
             raise MutationExecutionException(str(e))
-        return AddCertificateForTeam(success=True, team=result)
+        return AddCSRForTeam(success=True, team=result)
 
 
 TeamRoleChoicesSchema = graphene.Enum.from_enum(TeamRoleChoices)
@@ -188,7 +208,7 @@ class RemoveTeamMember(FailableMutation):
 
 class Mutation(graphene.ObjectType):
     create_team = CreateTeam.Field()
-    add_certificate_for_team = AddCertificateForTeam.Field()
+    add_csr_for_team = AddCSRForTeam.Field()
     add_team_member = AddTeamMember.Field()
     update_team_member = UpdateTeamMember.Field()
     remove_team_member = RemoveTeamMember.Field()

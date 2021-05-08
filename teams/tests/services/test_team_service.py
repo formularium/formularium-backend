@@ -21,18 +21,14 @@ class TeamServiceTest(TestCase):
         self.admin.groups.add(InstanceAdminGroup)
 
     def test_create_team(self):
-        team = TeamService.create(
-            self.admin, "Hunditeam", "fefecsdcsd", "vrjkvnjvkr", "dcbhb"
-        )
+        team = TeamService.create(self.admin, "Hunditeam", "fefecsdcsd")
         self.assertEqual(team.name, "Hunditeam")
         self.assertEqual(team.slug, "hunditeam")
         self.assertEqual(team.members.count(), 1)
 
     def test_create_team_unprivileged_user(self):
         with self.assertRaises(TeamServiceException):
-            team = TeamService.create(
-                self.user, "Hunditeam", "fefecsdcsd", "vrjkvnjvkr", "dcbhb"
-            )
+            team = TeamService.create(self.user, "Hunditeam", "fefecsdcsd")
 
 
 class TeamMembershipServiceTest(TestCase):
@@ -44,24 +40,18 @@ class TeamMembershipServiceTest(TestCase):
         self.admin.groups.add(InstanceAdminGroup)
 
     def test_add_member(self):
-        team = TeamService.create(
-            self.admin, "Hunditeam_", "fefecsdcsd", "vrjkvnjvkr", "dcbhb"
-        )
+        team = TeamService.create(self.admin, "Hunditeam_", "fefecsdcsd")
         TeamMembershipService.add_member(self.admin, team.pk, "vfvf", self.user.id)
         team.refresh_from_db()
         self.assertEqual(team.members.count(), 2)
 
     def test_add_member_unprivileged_user(self):
-        team = TeamService.create(
-            self.admin, "Hunditeam_", "fefecsdcsd", "vrjkvnjvkr", "dcbhb"
-        )
+        team = TeamService.create(self.admin, "Hunditeam_", "fefecsdcsd")
         with self.assertRaises(TeamServiceException):
             TeamMembershipService.add_member(self.user, team.pk, "vfvf", self.user.id)
 
     def test_update_member(self):
-        team = TeamService.create(
-            self.admin, "Hunditeam__", "fefecsdcsd", "vrjkvnjvkr", "dcbhb"
-        )
+        team = TeamService.create(self.admin, "Hunditeam__", "fefecsdcsd")
         membership = TeamMembershipService.add_member(
             self.admin, team.pk, "vfvf", self.user
         )
@@ -72,9 +62,7 @@ class TeamMembershipServiceTest(TestCase):
         )
 
     def test_update_member_unprivileged(self):
-        team = TeamService.create(
-            self.admin, "Hunditeam__", "fefecsdcsd", "vrjkvnjvkr", "dcbhb"
-        )
+        team = TeamService.create(self.admin, "Hunditeam__", "fefecsdcsd")
         membership = TeamMembershipService.add_member(
             self.admin, team.pk, "vfvf", self.user
         )
@@ -84,9 +72,7 @@ class TeamMembershipServiceTest(TestCase):
             )
 
     def test_update_member_remove_admin_by_update(self):
-        team = TeamService.create(
-            self.admin, "Hunditeam__", "fefecsdcsd", "vrjkvnjvkr", "dcbhb"
-        )
+        team = TeamService.create(self.admin, "Hunditeam__", "fefecsdcsd")
         membership = TeamMembershipService.add_member(
             self.admin, team.pk, "vfvf", self.user
         )
@@ -96,18 +82,14 @@ class TeamMembershipServiceTest(TestCase):
             )
 
     def test_update_member_not_in_team(self):
-        team = TeamService.create(
-            self.admin, "Hunditeam__", "fefecsdcsd", "vrjkvnjvkr", "dcbhb"
-        )
+        team = TeamService.create(self.admin, "Hunditeam__", "fefecsdcsd")
         with self.assertRaises(TeamServiceException):
             TeamMembershipService.update_member(
                 self.admin, team.id, self.user.id, role=TeamRoleChoices.ADMIN
             )
 
     def test_update_member_replace_admin_by_update(self):
-        team = TeamService.create(
-            self.admin, "Hunditeam__", "fefecsdcsd", "vrjkvnjvkr", "dcbhb"
-        )
+        team = TeamService.create(self.admin, "Hunditeam__", "fefecsdcsd")
         TeamMembershipService.add_member(
             self.admin, team.pk, "vfvf", self.user, role=TeamRoleChoices.ADMIN
         )
@@ -117,9 +99,7 @@ class TeamMembershipServiceTest(TestCase):
         self.assertEqual(team.members.count(), 2)
 
     def test_delete_member(self):
-        team = TeamService.create(
-            self.admin, "Hunditeam", "fefecsdcsd", "vrjkvnjvkr", "dcbhb"
-        )
+        team = TeamService.create(self.admin, "Hunditeam", "fefecsdcsd")
         membership = TeamMembershipService.add_member(
             self.admin, team.pk, "vfvf", self.user
         )
@@ -129,9 +109,7 @@ class TeamMembershipServiceTest(TestCase):
         self.assertEqual(team.members.count(), 1)
 
     def test_delete_member_unprivileged(self):
-        team = TeamService.create(
-            self.admin, "Hunditeam", "fefecsdcsd", "vrjkvnjvkr", "dcbhb"
-        )
+        team = TeamService.create(self.admin, "Hunditeam", "fefecsdcsd")
         membership = TeamMembershipService.add_member(
             self.admin, team.pk, "vfvf", self.user
         )
@@ -141,9 +119,7 @@ class TeamMembershipServiceTest(TestCase):
             TeamMembershipService.remove_member(self.user, team.id, self.user.id)
 
     def test_delete_member_remove_admin(self):
-        team = TeamService.create(
-            self.admin, "Hunditeam", "fefecsdcsd", "vrjkvnjvkr", "dcbhb"
-        )
+        team = TeamService.create(self.admin, "Hunditeam", "fefecsdcsd")
         membership = TeamMembershipService.add_member(
             self.admin, team.pk, "vfvf", self.user
         )
