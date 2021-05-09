@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "7f0b8a222f36994ccae9c6a9047974ea00a9a7ad79f473c71b5e7c08a5164255"
+            "sha256": "0a5d53df0c062ba83ee103b51768c6cdc889a2d16a5dd95ff73f38bade5c2a91"
         },
         "pipfile-spec": 6,
         "requires": {},
@@ -54,7 +54,7 @@
         },
         "black": {
             "git": "git://github.com/psf/black",
-            "ref": "5020577788eeab758a2c33d1d563e4ea82617ed4"
+            "ref": "06ccb88bf2bd35a4dc5d591bb296b5b299d07323"
         },
         "boto3": {
             "hashes": [
@@ -704,13 +704,6 @@
             ],
             "markers": "python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'",
             "version": "==2.20"
-        },
-        "pygraphviz": {
-            "hashes": [
-                "sha256:a7bec6609f37cf1e64898c59f075afd659106cf9356c5f387cecaa2e0cdb2304"
-            ],
-            "index": "pypi",
-            "version": "==1.7"
         },
         "pyjwt": {
             "hashes": [

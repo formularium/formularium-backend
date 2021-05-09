@@ -1,8 +1,9 @@
+import datetime
 import json
 from django.test import TestCase, RequestFactory
 
 from teams.tests.services.mock import TEST_CERT, TEST_PUBLIC_KEY
-from teams.utils import cert_to_jwk
+from teams.utils import cert_to_jwk, get_cert_valid_until
 
 
 class TestUtils(TestCase):
@@ -14,3 +15,7 @@ class TestUtils(TestCase):
         )
         self.assertEqual(len(result["x5c"]), 3)
         self.assertEqual(result["kty"], "RSA")
+
+    def test_certificate_valid_until(self):
+        validity = get_cert_valid_until(TEST_CERT)
+        self.assertEqual(validity.date(), datetime.date(day=6, month=8, year=2021))

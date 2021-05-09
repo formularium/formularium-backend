@@ -60,6 +60,8 @@ class InternalTeamNode(DjangoObjectType):
 
 
 class InternalTeamCertificateNode(DjangoObjectType):
+    valid_until = graphene.Field(graphene.DateTime)
+
     class Meta:
         model = TeamCertificate
         filter_fields = ["id"]
@@ -225,13 +227,12 @@ class UpdateTeamMember(FailableMutation):
     membership = graphene.Field(InternalTeamMembershipNode)
 
     class Arguments:
-        keys = graphene.List(EncryptionKeysInputType)
         team_id = graphene.ID(required=True)
         affected_user_id = graphene.ID(required=True)
         role = TeamRoleChoicesSchema()
 
     @permissions_checker([IsAuthenticated, CanEditFormPermission])
-    def mutate(self, info, keys, team_id, affected_user_id, role):
+    def mutate(self, info, team_id, affected_user_id, role):
         user = get_user_from_info(info)
         c_keys = {}
         for i, key in keys.items():
@@ -239,7 +240,6 @@ class UpdateTeamMember(FailableMutation):
         try:
             result = TeamMembershipService.update_member(
                 user,
-                key=c_keys,
                 team_id=int(from_global_id(team_id)[1]),
                 affected_user_id=int(from_global_id(affected_user_id)[1]),
                 role=role,

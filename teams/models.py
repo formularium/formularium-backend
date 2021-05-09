@@ -1,3 +1,4 @@
+import datetime
 import pgpy
 from autoslug import AutoSlugField
 from django.conf import settings
@@ -7,7 +8,7 @@ from django.contrib.auth import get_user_model
 from django.utils.translation import gettext_lazy as _
 
 # Create your models here.
-from teams.utils import cert_to_jwk
+from teams.utils import cert_to_jwk, get_cert_valid_until
 
 
 class EncryptionKey(models.Model):
@@ -67,6 +68,13 @@ class TeamCertificate(models.Model):
         max_length=30,
     )
     created_at = models.DateTimeField(auto_now_add=True)
+
+    @property
+    def valid_until(self) -> datetime:
+        certificate = self.certificate
+        if certificate:
+            return get_cert_valid_until(certificate)
+        return None
 
     def __str__(self):
         return f"{self.team} ({self.status})"

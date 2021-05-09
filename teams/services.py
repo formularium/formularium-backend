@@ -221,13 +221,11 @@ class TeamMembershipService(Service, CRUDMixin):
         user: AbstractUser,
         team_id: int,
         affected_user_id: int,
-        keys: Dict[str, str] = NotPassed,
         role: TeamRoleChoices = NotPassed,
     ) -> TeamMembership:
         """
         update a team member
         :param user: the user calling the serviceis affected
-        :param key: the new encrypted key for this user
         :param affected_user_id: the user that affects this change
         :param role: role of the user
         :return: team membership object
@@ -261,6 +259,7 @@ class TeamMembershipService(Service, CRUDMixin):
                 "role": role,
             },
         )
+
         membership.refresh_from_db()
         return membership
 
