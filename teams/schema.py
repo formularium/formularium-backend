@@ -131,10 +131,20 @@ class Query(graphene.ObjectType):
             int(from_global_id(form_id)[1])
         )
 
+    @permissions_checker([IsAuthenticated, CanActivateEncryptionKeyPermission])
+    def resolve_all_inactive_encryption_keys(self, info, **kwargs):
+        user = get_user_from_info(info)
+        return EncryptionKey.objects.filter(active=False)
+
     @permissions_checker([IsAuthenticated])
-    def resolve_all_teams_(self, info, **kwargs):
+    def resolve_all_teams(self, info, **kwargs):
         user = get_user_from_info(info)
         return Team.objects.all()
+
+
+class EncryptionKeysInputType(graphene.InputObjectType):
+    encryption_key_id = graphene.ID()
+    key = graphene.String()
 
 
 class CreateTeam(FailableMutation):
@@ -142,13 +152,16 @@ class CreateTeam(FailableMutation):
 
     class Arguments:
         name = graphene.String(required=True)
-        key = graphene.String(required=True)
+        keys = graphene.List(EncryptionKeysInputType)
 
     @permissions_checker([IsAuthenticated, CanCreateTeamPermission])
-    def mutate(self, info, name, key):
+    def mutate(self, info, name, keys):
         user = get_user_from_info(info)
+        c_keys = {}
+        for i, key in keys.items():
+            c_keys[int(from_global_id(key["encryption_key_id"])[1])] = key["key"]
         try:
-            result = TeamService.create(user, name=name, key=key)
+            result = TeamService.create(user, name=name, keys=c_keys)
         except TeamService.exceptions as e:
             raise MutationExecutionException(str(e))
         return CreateTeam(success=True, team=result)
@@ -184,18 +197,21 @@ class AddTeamMember(FailableMutation):
     membership = graphene.Field(InternalTeamMembershipNode)
 
     class Arguments:
-        key = graphene.ID(required=True)
+        keys = graphene.List(EncryptionKeysInputType)
         team_id = graphene.ID(required=True)
         invited_user_id = graphene.ID(required=True)
         role = TeamRoleChoicesSchema()
 
     @permissions_checker([IsAuthenticated, CanEditFormPermission])
-    def mutate(self, info, key, team_id, invited_user_id, role):
+    def mutate(self, info, keys, team_id, invited_user_id, role):
         user = get_user_from_info(info)
+        c_keys = {}
+        for i, key in keys.items():
+            c_keys[int(from_global_id(key["encryption_key_id"])[1])] = key["key"]
         try:
             result = TeamMembershipService.add_member(
                 user,
-                key=key,
+                keys=c_keys,
                 team_id=int(from_global_id(team_id)[1]),
                 invited_user_id=int(from_global_id(invited_user_id)[1]),
                 role=role,
@@ -209,18 +225,21 @@ class UpdateTeamMember(FailableMutation):
     membership = graphene.Field(InternalTeamMembershipNode)
 
     class Arguments:
-        key = graphene.ID(required=True)
+        keys = graphene.List(EncryptionKeysInputType)
         team_id = graphene.ID(required=True)
         affected_user_id = graphene.ID(required=True)
         role = TeamRoleChoicesSchema()
 
     @permissions_checker([IsAuthenticated, CanEditFormPermission])
-    def mutate(self, info, key, team_id, affected_user_id, role):
+    def mutate(self, info, keys, team_id, affected_user_id, role):
         user = get_user_from_info(info)
+        c_keys = {}
+        for i, key in keys.items():
+            c_keys[int(from_global_id(key["encryption_key_id"])[1])] = key["key"]
         try:
             result = TeamMembershipService.update_member(
                 user,
-                key=key,
+                key=c_keys,
                 team_id=int(from_global_id(team_id)[1]),
                 affected_user_id=int(from_global_id(affected_user_id)[1]),
                 role=role,
@@ -266,18 +285,27 @@ class SubmitEncryptionKey(FailableMutation):
         return SubmitEncryptionKey(success=True, encryption_key=result)
 
 
+class MembershipAccessKeyInputType(graphene.InputObjectType):
+    membership_id = graphene.ID()
+    key = graphene.String()
+
+
 class ActivateEncryptionKey(FailableMutation):
     encryption_key = graphene.Field(InactiveEncryptionKeyNode)
 
     class Arguments:
         public_key_id = graphene.ID(required=True)
+        keys = graphene.List(MembershipAccessKeyInputType)
 
-    @permissions_checker([IsAuthenticated, CanActivateEncryptionKeyPermission])
-    def mutate(self, info, public_key_id):
+    @permissions_checker({IsAuthenticated, CanActivateEncryptionKeyPermission})
+    def mutate(self, info, public_key_id, keys):
+        c_keys = {}
+        for i, key in keys.items():
+            c_keys[int(from_global_id(key["membership_id"])[1])] = key["key"]
         user = get_user_from_info(info)
         try:
             result = EncryptionKeyService.activate_key(
-                user, int(from_global_id(public_key_id)[1])
+                user, int(from_global_id(public_key_id)[1]), keys=c_keys
             )
         except EncryptionKeyService.exceptions as e:
             raise MutationExecutionException(str(e))

@@ -41,10 +41,10 @@ class FormServiceTest(TestCase):
         )
 
         # create a group and add a form/user to it
-        self.group = TeamService.create(self.admin, "Hunditeam", "fefecsdcsd")
+        self.group = TeamService.create(self.admin, "Hunditeam", {})
         create_mock_cert(self.group)
         TeamMembershipService.add_member(
-            self.admin, team_id=self.group.id, key="dcdcd", invited_user_id=self.user.id
+            self.admin, team_id=self.group.id, keys={}, invited_user_id=self.user.id
         )
         self.form.teams.add(self.group)
 
@@ -162,7 +162,7 @@ class FormServiceTest(TestCase):
         )
         self.assertEqual(form.xml_code, "<xml></xml>")
 
-        grp = TeamService.create(self.admin, name="yolo", key="fvrv")
+        grp = TeamService.create(self.admin, name="yolo", keys={})
         create_mock_cert(grp)
 
         form = FormService.update_form_teams(self.admin, form.pk, [self.group.pk])

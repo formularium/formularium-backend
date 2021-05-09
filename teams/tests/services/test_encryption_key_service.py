@@ -37,10 +37,10 @@ class EncryptionKeyServiceTest(TestCase):
         )
 
         # create a group and add a form/user to it
-        self.group = TeamService.create(self.admin, "Hunditeam", "fefecsdcsd")
+        self.group = TeamService.create(self.admin, "Hunditeam", {})
         create_mock_cert(self.group)
         TeamMembershipService.add_member(
-            self.admin, team_id=self.group.id, key="dcdcd", invited_user_id=self.user.id
+            self.admin, team_id=self.group.id, keys={}, invited_user_id=self.user.id
         )
         self.form.teams.add(self.group)
         self.keypair = generate_test_keypair()
@@ -70,7 +70,7 @@ class EncryptionKeyServiceTest(TestCase):
             len(FormService.retrieve_public_keys_for_form(self.form.id)), 1
         )
 
-        key = EncryptionKeyService.activate_key(self.admin, key.id)
+        key = EncryptionKeyService.activate_key(self.admin, key.id, {})
 
         self.assertEqual(
             len(FormService.retrieve_public_keys_for_form(self.form.id)), 1
@@ -82,4 +82,4 @@ class EncryptionKeyServiceTest(TestCase):
         )
 
         with self.assertRaises(PermissionError):
-            key_two = EncryptionKeyService.activate_key(self.user, key_two)
+            key_two = EncryptionKeyService.activate_key(self.user, key_two, {})

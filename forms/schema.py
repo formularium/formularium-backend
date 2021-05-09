@@ -33,10 +33,8 @@ from forms.models import (
 )
 from forms.permissions import (
     CanRetrieveFormSubmissionsPermission,
-    CanAddEncryptionKeyPermission,
     CanEditFormPermission,
     CanAddFormTranslationPermission,
-    CanActivateEncryptionKeyPermission,
 )
 from forms.services.forms import (
     FormService,
@@ -178,11 +176,6 @@ class Query(graphene.ObjectType):
     def resolve_all_form_submissions(self, info, **kwargs):
         user = get_user_from_info(info)
         return FormReceiverService.retrieve_submitted_forms(user)
-
-    @permissions_checker([IsAuthenticated, CanActivateEncryptionKeyPermission])
-    def resolve_all_inactive_encryption_keys(self, info, **kwargs):
-        user = get_user_from_info(info)
-        return EncryptionKey.objects.filter(active=False)
 
     @permissions_checker([IsAuthenticated, CanEditFormPermission])
     def resolve_all_internal_forms(self, info, **kwargs):

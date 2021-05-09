@@ -41,11 +41,11 @@ class FormSchemaServiceTest(TestCase):
         )
 
         # create a group and add a form/user to it
-        self.group = TeamService.create(self.admin, "Hunditeam", "fefecsdcsd")
+        self.group = TeamService.create(self.admin, "Hunditeam", {})
         create_mock_cert(self.group)
 
         TeamMembershipService.add_member(
-            self.admin, team_id=self.group.id, key="dcdcd", invited_user_id=self.user.id
+            self.admin, team_id=self.group.id, keys={}, invited_user_id=self.user.id
         )
         self.form.teams.add(self.group)
         self.keypair = generate_test_keypair()
