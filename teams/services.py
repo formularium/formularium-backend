@@ -6,19 +6,25 @@ from acme.client import ClientV2, ClientNetwork
 from acme.messages import Directory, Registration
 from certbot._internal.client import acme_from_config_key
 from cryptography.hazmat.backends import default_backend
-from django.contrib.auth.models import AbstractUser
-from django.utils.text import slugify
+from django.contrib.auth.models import AbstractUser, User
+from django.db import transaction
 from josepy import JWKRSA
 from letsencrypt.models import AcmeChallenge
 from serious_django_services import Service, CRUDMixin, NotPassed
 from cryptography.hazmat.primitives.asymmetric.rsa import generate_private_key
 from django.conf import settings
+from typing import Dict
 
+from forms.services.forms import FormServiceException
 from teams.forms import (
     CreateTeamForm,
     UpdateTeamForm,
     CreateTeamMembershipForm,
     UpdateTeamMembershipForm,
+    UpdateEncryptionKeyForm,
+    CreateEncryptionKeyForm,
+    CreateTeamMembershipAccessKeyForm,
+    UpdateTeamMembershipAccessKeyForm,
 )
 from teams.models import (
     Team,
@@ -26,8 +32,15 @@ from teams.models import (
     TeamMembership,
     TeamStatus,
     TeamCertificate,
+    EncryptionKey,
+    TeamMembershipAccessKey,
 )
-from teams.permissions import CanCreateTeamPermission, CanRemoveTeamMemberPermission
+from teams.permissions import (
+    CanCreateTeamPermission,
+    CanRemoveTeamMemberPermission,
+    CanActivateEncryptionKeyPermission,
+    CanAddEncryptionKeyPermission,
+)
 
 
 class TeamServiceException(Exception):
@@ -43,14 +56,13 @@ class TeamService(Service, CRUDMixin):
     model = Team
 
     @classmethod
-    def create(cls, user: AbstractUser, name: str, key: str) -> Team:
+    @transaction.atomic
+    def create(cls, user: AbstractUser, name: str, keys: Dict[int, str]) -> Team:
         """
         creates a new user and makes them admin
-        :param csr: the certificate request
-        :param public_key: public key for this team
         :param user: user calling the service (needs CanCreateTeamPermission permission)
         :param name: name of the Team
-        :param key: the newly generated public key
+        :param keys: the newly generated public key
         :return: the newly generated team
         """
         if not user.has_perm(CanCreateTeamPermission):
@@ -58,19 +70,21 @@ class TeamService(Service, CRUDMixin):
                 "You don't have the permission to create a new team"
             )
 
-        team = cls._create({"name": name, "slug": slugify(name)})
+        TeamMembershipService._validate_keys_provided(user, keys)
+
+        team = cls._create({"name": name})
 
         TeamMembershipService.add_member(
             user=user,
             team_id=team.id,
-            key=key,
-            invited_user_id=user.id,
+            keys=keys,
+            invited_user_id=user.pk,
             role=TeamRoleChoices.ADMIN,
         )
         return team
 
     @classmethod
-    def add_csr(cls, user, team_id: int, csr: str, public_key: str):
+    def add_csr(cls, user: AbstractUser, team_id: int, csr: str, public_key: str):
         """
         add the signed certificate to the team
         :param user: user calling the service
@@ -109,11 +123,56 @@ class TeamMembershipService(Service, CRUDMixin):
     model = TeamMembership
 
     @classmethod
+    def _validate_keys_provided(cls, affected_user: AbstractUser, keys: Dict[int, str]):
+        """
+        checks if all keys for a user have been submitted
+        :param affected_user: the user that
+        :param keys: the keys dict
+        :return: True if all OK
+        """
+        encryption_keys = affected_user.encryption_keys.filter(active=True)
+        for key in encryption_keys:
+            if key.pk not in keys.keys():
+                raise TeamServiceException(
+                    f"There hasn't been provided an internal key for the id '{key.id}'"
+                )
+
+        return True
+
+    @classmethod
+    def _add_keys_to_membership(
+        cls,
+        invited_user: AbstractUser,
+        membership: TeamMembership,
+        keys: Dict[int, str],
+    ):
+        """
+        adds the keys to the membership object
+        :param keys: the keys dictionary
+        :param membership: the newly created membership
+        :return:
+        """
+        user_keys = invited_user.encryption_keys.filter(active=True).values_list(
+            "id", flat=True
+        )
+        for key_id, key in keys.items():
+            if key_id not in user_keys:
+                raise TeamServiceException(
+                    f"The key id {key_id} is not assigned to the user affected"
+                )
+            TeamMembershipAccessKeyService.add_membership_key(
+                membership.pk, key_id, key
+            )
+
+        return True
+
+    @classmethod
+    @transaction.atomic
     def add_member(
         cls,
         user: AbstractUser,
         team_id: int,
-        key: str,
+        keys: Dict[int, str],
         invited_user_id: int,
         role: TeamRoleChoices = TeamRoleChoices.MEMBER,
     ) -> TeamMembership:
@@ -123,7 +182,7 @@ class TeamMembershipService(Service, CRUDMixin):
         :param role: the role the newly created Member should have (Admin or Member)
         :param team_id: the id of the team the user should be added to
         :param user: user calling the services (needs CanCreateTeamPermission permission)
-        :param key: the newly generated public key
+        :param keys: the encrypted keys for this member
         :return: the newly generated team
         """
 
@@ -138,16 +197,20 @@ class TeamMembershipService(Service, CRUDMixin):
             and not team.members.filter(user=user, role=TeamRoleChoices.ADMIN).exists()
         ):
             raise TeamServiceException(
-                "You don't have the permission to create a new team"
+                "You don't have the permission to add a new team member"
             )
 
+        invited_user = User.objects.filter(pk=invited_user_id).get()
+        TeamMembershipService._validate_keys_provided(invited_user, keys)
         team_membership = cls._create(
             {
                 "team": team_id,
-                "key": key,
                 "user": invited_user_id,
                 "role": role,
             }
+        )
+        TeamMembershipService._add_keys_to_membership(
+            invited_user, team_membership, keys
         )
 
         return team_membership
@@ -158,7 +221,7 @@ class TeamMembershipService(Service, CRUDMixin):
         user: AbstractUser,
         team_id: int,
         affected_user_id: int,
-        key: str = NotPassed,
+        keys: Dict[str, str] = NotPassed,
         role: TeamRoleChoices = NotPassed,
     ) -> TeamMembership:
         """
@@ -195,7 +258,6 @@ class TeamMembershipService(Service, CRUDMixin):
         cls._update(
             membership.id,
             {
-                "key": key,
                 "role": role,
             },
         )
@@ -235,6 +297,32 @@ class TeamMembershipService(Service, CRUDMixin):
             )
 
         return cls._delete(membership.id)
+
+
+class TeamMembershipAccessKeyService(Service, CRUDMixin):
+    service_exceptions = (TeamServiceException,)
+
+    update_form = UpdateTeamMembershipAccessKeyForm
+    create_form = CreateTeamMembershipAccessKeyForm
+
+    model = TeamMembershipAccessKey
+
+    @classmethod
+    def add_membership_key(cls, membership: int, encryption_key: int, key: str):
+        """
+        add one encrypted key to one specific membership object
+        :param membership: the membership id
+        :param encryption_key: the encryption id
+        :param key: the encrypted key
+        :return: the membership object
+        """
+        return cls._create(
+            {
+                "membership": membership,
+                "encryption_key": encryption_key,
+                "key": key,
+            }
+        )
 
 
 class TeamCertificateService(Service):
@@ -354,3 +442,78 @@ class ACMEService(Service):
                     return i
 
         raise Exception("HTTP-01 challenge was not offered by the CA server.")
+
+
+class EncryptionKeyService(Service, CRUDMixin):
+    service_exceptions = (FormServiceException,)
+
+    update_form = UpdateEncryptionKeyForm
+    create_form = CreateEncryptionKeyForm
+
+    model = EncryptionKey
+
+    @classmethod
+    def add_key(
+        cls, user: AbstractUser, public_key: str, key_name: str = NotPassed
+    ) -> EncryptionKey:
+        """
+        submit a generated key for a user
+        :param key_name: name/description of the encryption key
+        :param user: the user calling the service
+        :param public_key: their public key
+        :return: id/information about key creation
+        """
+        if not user.has_perm(CanAddEncryptionKeyPermission):
+            raise PermissionError("You are not allowed to add a form key")
+
+        return cls._create(
+            {
+                "user": user.pk,
+                "public_key": public_key,
+                "key_name": key_name,
+            }
+        )
+
+    @classmethod
+    @transaction.atomic
+    def activate_key(
+        cls, user: AbstractUser, public_key_id: int, keys: Dict[int, str]
+    ) -> EncryptionKey:
+        """
+        activate a submitted public key that is used to share form keys between users
+        :param user: the user calling the service
+        :param keys: the encrypted keys to access teams
+        :param public_key_id: id the of the public key that should be activated
+        :return: the activated key object
+        """
+        if not user.has_perm(CanActivateEncryptionKeyPermission):
+            raise PermissionError("You are not allowed to activate this form key")
+        public_key = EncryptionKey.objects.get(id=public_key_id)
+
+        if public_key.active == True:
+            raise FormServiceException("This public key is already active.")
+
+        public_key.active = True
+        public_key.save()
+
+        for membership_id, key in keys.items():
+            TeamMembershipAccessKeyService.add_membership_key(
+                membership=membership_id, encryption_key=public_key_id, key=key
+            )
+        return public_key
+
+    @classmethod
+    def remove_key(cls, user: AbstractUser, public_key_id: int) -> bool:
+        """
+        remove a submitted public key that is used to share form keys between users
+        :param user: the user calling the service
+        :param public_key_id: id the of the public key that should be activated
+        :return: the activated key object
+        """
+        if not user.has_perm(CanActivateEncryptionKeyPermission):
+            raise PermissionError("You are not allowed to activate this form key")
+        public_key = EncryptionKey.objects.get(id=public_key_id)
+
+        public_key.delete()
+
+        return True

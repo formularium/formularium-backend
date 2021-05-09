@@ -8,19 +8,16 @@ from django.urls import reverse
 from django.conf import settings
 from serious_django_permissions.management.commands import create_groups
 
-from forms.models import Form, EncryptionKey, SignatureKey
+from forms.management.commands import create_signature_key
+from forms.models import Form, SignatureKey
 from forms.services.forms import (
     FormService,
-    FormServiceException,
-    FormReceiverService,
-    EncryptionKeyService,
-    FormSchemaService,
 )
-from teams.services import TeamService, TeamMembershipService
+from forms.tests.utils import generate_test_keypair
+from teams.models import EncryptionKey
+from teams.services import TeamService, TeamMembershipService, EncryptionKeyService
 from settings.default_groups import AdministrativeStaffGroup, InstanceAdminGroup
 from teams.tests.services.mock import create_mock_cert
-from ...management.commands import create_signature_key
-from ..utils import generate_test_keypair
 
 
 class EncryptionKeyServiceTest(TestCase):
@@ -40,10 +37,10 @@ class EncryptionKeyServiceTest(TestCase):
         )
 
         # create a group and add a form/user to it
-        self.group = TeamService.create(self.admin, "Hunditeam", "fefecsdcsd")
+        self.group = TeamService.create(self.admin, "Hunditeam", {})
         create_mock_cert(self.group)
         TeamMembershipService.add_member(
-            self.admin, team_id=self.group.id, key="dcdcd", invited_user_id=self.user.id
+            self.admin, team_id=self.group.id, keys={}, invited_user_id=self.user.id
         )
         self.form.teams.add(self.group)
         self.keypair = generate_test_keypair()
@@ -73,7 +70,7 @@ class EncryptionKeyServiceTest(TestCase):
             len(FormService.retrieve_public_keys_for_form(self.form.id)), 1
         )
 
-        key = EncryptionKeyService.activate_key(self.admin, key.id)
+        key = EncryptionKeyService.activate_key(self.admin, key.id, {})
 
         self.assertEqual(
             len(FormService.retrieve_public_keys_for_form(self.form.id)), 1
@@ -85,4 +82,4 @@ class EncryptionKeyServiceTest(TestCase):
         )
 
         with self.assertRaises(PermissionError):
-            key_two = EncryptionKeyService.activate_key(self.user, key_two)
+            key_two = EncryptionKeyService.activate_key(self.user, key_two, {})

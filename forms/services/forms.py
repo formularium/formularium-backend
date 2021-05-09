@@ -22,7 +22,6 @@ from forms.forms import (
 from forms.models import (
     SignatureKey,
     Form,
-    EncryptionKey,
     FormSubmission,
     FormSchema,
     FormTranslation,
@@ -30,10 +29,9 @@ from forms.models import (
     Team,
 )
 from forms.permissions import (
-    CanActivateEncryptionKeyPermission,
-    CanAddEncryptionKeyPermission,
     CanAddFormTranslationPermission,
 )
+from teams.permissions import CanActivateEncryptionKeyPermission
 
 
 class FormServiceException(Exception):
@@ -445,57 +443,3 @@ class FormReceiverService(Service):
         """
         accessible_forms = cls.retrieve_accessible_forms(user)
         return FormSubmission.objects.filter(form__in=accessible_forms)
-
-
-class EncryptionKeyService(Service):
-    service_exceptions = (FormServiceException,)
-
-    @classmethod
-    def add_key(cls, user: AbstractUser, public_key: str) -> EncryptionKey:
-        """
-        submit a generated key for a user
-        :param user: the user calling the service
-        :param public_key: their public key
-        :return: id/information about key creation
-        """
-        if not user.has_perm(CanAddEncryptionKeyPermission):
-            raise PermissionError("You are not allowed to add a form key")
-        return EncryptionKey.objects.create(
-            user=user, public_key=public_key, active=False
-        )
-
-    @classmethod
-    def activate_key(cls, user: AbstractUser, public_key_id: int) -> EncryptionKey:
-        """
-        activate a submitted public key that is used to share form keys between users
-        :param user: the user calling the service
-        :param public_key_id: id the of the public key that should be activated
-        :return: the activated key object
-        """
-        if not user.has_perm(CanActivateEncryptionKeyPermission):
-            raise PermissionError("You are not allowed to activate this form key")
-        public_key = EncryptionKey.objects.get(id=public_key_id)
-
-        if public_key.active == True:
-            raise FormServiceException("This public key is already active.")
-
-        public_key.active = True
-        public_key.save()
-
-        return public_key
-
-    @classmethod
-    def remove_key(cls, user: AbstractUser, public_key_id: int) -> bool:
-        """
-        remove a submitted public key that is used to share form keys between users
-        :param user: the user calling the service
-        :param public_key_id: id the of the public key that should be activated
-        :return: the activated key object
-        """
-        if not user.has_perm(CanActivateEncryptionKeyPermission):
-            raise PermissionError("You are not allowed to activate this form key")
-        public_key = EncryptionKey.objects.get(id=public_key_id)
-
-        public_key.delete()
-
-        return True

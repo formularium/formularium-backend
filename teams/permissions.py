@@ -1,6 +1,6 @@
 from serious_django_permissions.permissions import Permission
 
-from teams.models import Team
+from teams.models import Team, EncryptionKey
 
 
 class CanCreateTeamPermission(Permission):
@@ -23,6 +23,32 @@ class CanRemoveTeamMemberPermission(Permission):
     @staticmethod
     def has_permission(context):
         return context.user.has_perm(Team)
+
+    @staticmethod
+    def has_object_permission(context, obj):
+        return True
+
+
+class CanAddEncryptionKeyPermission(Permission):
+    model = EncryptionKey
+    description = "can add a new encryption key"
+
+    @staticmethod
+    def has_permission(context):
+        return context.user.has_perm(CanAddEncryptionKeyPermission)
+
+    @staticmethod
+    def has_object_permission(context, obj):
+        return True
+
+
+class CanActivateEncryptionKeyPermission(Permission):
+    model = EncryptionKey
+    description = "can activate a new encryption key"
+
+    @staticmethod
+    def has_permission(context):
+        return context.user.has_perm(CanActivateEncryptionKeyPermission)
 
     @staticmethod
     def has_object_permission(context, obj):

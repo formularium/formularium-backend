@@ -11,24 +11,6 @@ from languages.regions import REGIONS
 from teams.models import Team
 
 
-class EncryptionKey(models.Model):
-    user = models.ForeignKey(
-        get_user_model(), on_delete=models.CASCADE, related_name="encryption_keys"
-    )
-    public_key = models.TextField()
-    active = models.BooleanField()
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    @property
-    def fingerprint(self) -> str:
-        pkey = pgpy.PGPKey()
-        pkey.parse(self.public_key)
-        return pkey.fingerprint
-
-    def __str__(self):
-        return f"{self.fingerprint} ({self.user.username})"
-
-
 class SignatureKey(models.Model):
     class SignatureKeyType(models.TextChoices):
         PRIMARY = "primary", _("Primary")

@@ -6,7 +6,7 @@ from django.utils.translation import gettext as _
 #
 # ValidationError and _ are imported so you can raise auto-translated errors
 # inside custom validation functions.
-from teams.models import Team, TeamMembership
+from teams.models import Team, TeamMembership, EncryptionKey, TeamMembershipAccessKey
 
 
 class CreateTeamForm(forms.ModelForm):
@@ -14,7 +14,6 @@ class CreateTeamForm(forms.ModelForm):
         model = Team
         fields = [
             "name",
-            "slug",
         ]
 
 
@@ -24,10 +23,22 @@ class UpdateTeamForm(forms.ModelForm):
         fields = ["name"]
 
 
+class CreateEncryptionKeyForm(forms.ModelForm):
+    class Meta:
+        model = EncryptionKey
+        fields = ["user", "key_name", "public_key"]
+
+
+class UpdateEncryptionKeyForm(forms.ModelForm):
+    class Meta:
+        model = EncryptionKey
+        fields = ["key_name"]
+
+
 class CreateTeamMembershipForm(forms.ModelForm):
     class Meta:
         model = TeamMembership
-        fields = ["user", "team", "role", "key"]
+        fields = ["user", "team", "role"]
 
 
 class UpdateTeamMembershipForm(forms.ModelForm):
@@ -35,5 +46,16 @@ class UpdateTeamMembershipForm(forms.ModelForm):
         model = TeamMembership
         fields = [
             "role",
-            "key",
         ]
+
+
+class CreateTeamMembershipAccessKeyForm(forms.ModelForm):
+    class Meta:
+        model = TeamMembershipAccessKey
+        fields = ["membership", "key", "encryption_key"]
+
+
+class UpdateTeamMembershipAccessKeyForm(forms.ModelForm):
+    class Meta:
+        model = TeamMembershipAccessKey
+        fields = ["key", "encryption_key"]
