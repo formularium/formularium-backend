@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "73f16bce31627c2d0811ed7bf457a7549fa2033e3ebdaf127b015232657ac2e4"
+            "sha256": "7f0b8a222f36994ccae9c6a9047974ea00a9a7ad79f473c71b5e7c08a5164255"
         },
         "pipfile-spec": 6,
         "requires": {},
@@ -54,7 +54,7 @@
         },
         "black": {
             "git": "git://github.com/psf/black",
-            "ref": "036bea4aa0e2b9b3fe50d0d49addc811cce61fa4"
+            "ref": "5020577788eeab758a2c33d1d563e4ea82617ed4"
         },
         "boto3": {
             "hashes": [
@@ -308,6 +308,14 @@
             ],
             "index": "pypi",
             "version": "==1.11.2"
+        },
+        "django-extensions": {
+            "hashes": [
+                "sha256:50de8977794a66a91575dd40f87d5053608f679561731845edbd325ceeb387e3",
+                "sha256:5f0fea7bf131ca303090352577a9e7f8bfbf5489bd9d9c8aea9401db28db34a0"
+            ],
+            "index": "pypi",
+            "version": "==3.1.3"
         },
         "django-filter": {
             "hashes": [
@@ -696,6 +704,13 @@
             ],
             "markers": "python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'",
             "version": "==2.20"
+        },
+        "pygraphviz": {
+            "hashes": [
+                "sha256:a7bec6609f37cf1e64898c59f075afd659106cf9356c5f387cecaa2e0cdb2304"
+            ],
+            "index": "pypi",
+            "version": "==1.7"
         },
         "pyjwt": {
             "hashes": [
