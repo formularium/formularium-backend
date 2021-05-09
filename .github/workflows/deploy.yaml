@@ -46,7 +46,7 @@ jobs:
         with:
           aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          version_label: 1
+          version_label: ${{GITHUB_SHA}}
           application_name: Formularium
           environment_name: Formularium-dev
           region: eu-central-1
