@@ -16,7 +16,7 @@ class EncryptionKey(models.Model):
     )
     key_name = models.CharField(max_length=200, default="", blank=True)
     public_key = models.TextField()
-    active = models.BooleanField()
+    active = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     @property

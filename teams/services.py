@@ -19,6 +19,8 @@ from teams.forms import (
     UpdateTeamForm,
     CreateTeamMembershipForm,
     UpdateTeamMembershipForm,
+    UpdateEncryptionKeyForm,
+    CreateEncryptionKeyForm,
 )
 from teams.models import (
     Team,
@@ -362,21 +364,34 @@ class ACMEService(Service):
         raise Exception("HTTP-01 challenge was not offered by the CA server.")
 
 
-class EncryptionKeyService(Service):
+class EncryptionKeyService(Service, CRUDMixin):
     service_exceptions = (FormServiceException,)
 
+    update_form = UpdateEncryptionKeyForm
+    create_form = CreateEncryptionKeyForm
+
+    model = EncryptionKey
+
     @classmethod
-    def add_key(cls, user: AbstractUser, public_key: str) -> EncryptionKey:
+    def add_key(
+        cls, user: AbstractUser, public_key: str, key_name: str = NotPassed
+    ) -> EncryptionKey:
         """
         submit a generated key for a user
+        :param key_name: name/description of the encryption key
         :param user: the user calling the service
         :param public_key: their public key
         :return: id/information about key creation
         """
         if not user.has_perm(CanAddEncryptionKeyPermission):
             raise PermissionError("You are not allowed to add a form key")
-        return EncryptionKey.objects.create(
-            user=user, public_key=public_key, active=False
+
+        return cls._create(
+            {
+                "user": user.pk,
+                "public_key": public_key,
+                "key_name": key_name,
+            }
         )
 
     @classmethod

@@ -254,12 +254,13 @@ class SubmitEncryptionKey(FailableMutation):
 
     class Arguments:
         public_key = graphene.String(required=True)
+        key_name = graphene.String()
 
     @permissions_checker([IsAuthenticated, CanAddEncryptionKeyPermission])
-    def mutate(self, info, public_key):
+    def mutate(self, info, public_key, key_name):
         user = get_user_from_info(info)
         try:
-            result = EncryptionKeyService.add_key(user, public_key)
+            result = EncryptionKeyService.add_key(user, public_key, key_name)
         except EncryptionKeyService.exceptions as e:
             raise MutationExecutionException(str(e))
         return SubmitEncryptionKey(success=True, encryption_key=result)
