@@ -26,7 +26,6 @@ from serious_django_services import NotPassed
 
 from forms.models import (
     Form,
-    EncryptionKey,
     FormSubmission,
     FormSchema,
     FormTranslation,
@@ -43,7 +42,6 @@ from forms.services.forms import (
     FormService,
     FormServiceException,
     FormReceiverService,
-    EncryptionKeyService,
     FormSchemaService,
     FormTranslationService,
 )
@@ -158,26 +156,6 @@ class InternalFormTranslationNode(PermissionDjangoObjectType):
         return item
 
 
-class EncryptionKeyNode(DjangoObjectType):
-    fingerprint = graphene.Field(graphene.String)
-
-    class Meta:
-        model = EncryptionKey
-
-    @classmethod
-    def get_queryset(cls, queryset, info):
-        return queryset.filter(active=True)
-
-
-class InactiveEncryptionKeyNode(PermissionDjangoObjectType):
-    fingerprint = graphene.Field(graphene.String)
-
-    class Meta:
-        model = EncryptionKey
-        filter_fields = ["id"]
-        interfaces = (relay.Node,)
-
-
 class Query(graphene.ObjectType):
     # get a single form
     form = relay.Node.Field(FormNode)
@@ -188,25 +166,13 @@ class Query(graphene.ObjectType):
     # get a list of available form submissions
     all_form_submissions = DjangoFilterConnectionField(FormSubmissionNode)
 
-    # get public keys for form
-    public_keys_for_form = graphene.List(
-        EncryptionKeyNode, form_id=graphene.ID(required=True)
-    )
-
     # get all forms - also inactive, for the admin interface
     internal_form = relay.Node.Field(InternalFormNode)
-    all_inactive_encryption_keys = DjangoFilterConnectionField(
-        InactiveEncryptionKeyNode
-    )
+
     all_internal_forms = DjangoFilterConnectionField(InternalFormNode)
 
     form_schema = relay.Node.Field(FormSchemaNode)
     internal_form_schema = relay.Node.Field(InternalFormSchemaNode)
-
-    def resolve_public_keys_for_form(self, info, form_id):
-        return FormService.retrieve_public_keys_for_form(
-            int(from_global_id(form_id)[1])
-        )
 
     @permissions_checker([IsAuthenticated, CanRetrieveFormSubmissionsPermission])
     def resolve_all_form_submissions(self, info, **kwargs):
@@ -238,56 +204,6 @@ class SubmitForm(FailableMutation):
         except FormService.exceptions as e:
             raise MutationExecutionException(str(e))
         return SubmitForm(success=True, **result)
-
-
-class SubmitEncryptionKey(FailableMutation):
-    encryption_key = graphene.Field(InactiveEncryptionKeyNode)
-
-    class Arguments:
-        public_key = graphene.String(required=True)
-
-    @permissions_checker([IsAuthenticated, CanAddEncryptionKeyPermission])
-    def mutate(self, info, public_key):
-        user = get_user_from_info(info)
-        try:
-            result = EncryptionKeyService.add_key(user, public_key)
-        except EncryptionKeyService.exceptions as e:
-            raise MutationExecutionException(str(e))
-        return SubmitEncryptionKey(success=True, encryption_key=result)
-
-
-class ActivateEncryptionKey(FailableMutation):
-    encryption_key = graphene.Field(InactiveEncryptionKeyNode)
-
-    class Arguments:
-        public_key_id = graphene.ID(required=True)
-
-    @permissions_checker([IsAuthenticated, CanActivateEncryptionKeyPermission])
-    def mutate(self, info, public_key_id):
-        user = get_user_from_info(info)
-        try:
-            result = EncryptionKeyService.activate_key(
-                user, int(from_global_id(public_key_id)[1])
-            )
-        except EncryptionKeyService.exceptions as e:
-            raise MutationExecutionException(str(e))
-        return ActivateEncryptionKey(success=True, encryption_key=result)
-
-
-class RemoveEncryptionKey(FailableMutation):
-    class Arguments:
-        public_key_id = graphene.ID(required=True)
-
-    @permissions_checker([IsAuthenticated, CanActivateEncryptionKeyPermission])
-    def mutate(self, info, public_key_id):
-        user = get_user_from_info(info)
-        try:
-            result = EncryptionKeyService.remove_key(
-                user, int(from_global_id(public_key_id)[1])
-            )
-        except EncryptionKeyService.exceptions as e:
-            raise MutationExecutionException(str(e))
-        return RemoveEncryptionKey(success=True)
 
 
 class CreateForm(FailableMutation):
@@ -475,9 +391,6 @@ class UpdateForm(FailableMutation):
 
 class Mutation(graphene.ObjectType):
     submit_form = SubmitForm.Field()
-    submit_encryption_key = SubmitEncryptionKey.Field()
-    activate_encryption_key = ActivateEncryptionKey.Field()
-    remove_encryption_key = RemoveEncryptionKey.Field()
     create_form_schema = CreateFormSchema.Field()
     update_form_schema = UpdateFormSchema.Field()
     create_form = CreateForm.Field()

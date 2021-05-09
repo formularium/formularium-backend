@@ -7,13 +7,13 @@ from acme.messages import Directory, Registration
 from certbot._internal.client import acme_from_config_key
 from cryptography.hazmat.backends import default_backend
 from django.contrib.auth.models import AbstractUser
-from django.utils.text import slugify
 from josepy import JWKRSA
 from letsencrypt.models import AcmeChallenge
 from serious_django_services import Service, CRUDMixin, NotPassed
 from cryptography.hazmat.primitives.asymmetric.rsa import generate_private_key
 from django.conf import settings
 
+from forms.services.forms import FormServiceException
 from teams.forms import (
     CreateTeamForm,
     UpdateTeamForm,
@@ -26,8 +26,14 @@ from teams.models import (
     TeamMembership,
     TeamStatus,
     TeamCertificate,
+    EncryptionKey,
 )
-from teams.permissions import CanCreateTeamPermission, CanRemoveTeamMemberPermission
+from teams.permissions import (
+    CanCreateTeamPermission,
+    CanRemoveTeamMemberPermission,
+    CanActivateEncryptionKeyPermission,
+    CanAddEncryptionKeyPermission,
+)
 
 
 class TeamServiceException(Exception):
@@ -58,7 +64,7 @@ class TeamService(Service, CRUDMixin):
                 "You don't have the permission to create a new team"
             )
 
-        team = cls._create({"name": name, "slug": slugify(name)})
+        team = cls._create({"name": name})
 
         TeamMembershipService.add_member(
             user=user,
@@ -354,3 +360,57 @@ class ACMEService(Service):
                     return i
 
         raise Exception("HTTP-01 challenge was not offered by the CA server.")
+
+
+class EncryptionKeyService(Service):
+    service_exceptions = (FormServiceException,)
+
+    @classmethod
+    def add_key(cls, user: AbstractUser, public_key: str) -> EncryptionKey:
+        """
+        submit a generated key for a user
+        :param user: the user calling the service
+        :param public_key: their public key
+        :return: id/information about key creation
+        """
+        if not user.has_perm(CanAddEncryptionKeyPermission):
+            raise PermissionError("You are not allowed to add a form key")
+        return EncryptionKey.objects.create(
+            user=user, public_key=public_key, active=False
+        )
+
+    @classmethod
+    def activate_key(cls, user: AbstractUser, public_key_id: int) -> EncryptionKey:
+        """
+        activate a submitted public key that is used to share form keys between users
+        :param user: the user calling the service
+        :param public_key_id: id the of the public key that should be activated
+        :return: the activated key object
+        """
+        if not user.has_perm(CanActivateEncryptionKeyPermission):
+            raise PermissionError("You are not allowed to activate this form key")
+        public_key = EncryptionKey.objects.get(id=public_key_id)
+
+        if public_key.active == True:
+            raise FormServiceException("This public key is already active.")
+
+        public_key.active = True
+        public_key.save()
+
+        return public_key
+
+    @classmethod
+    def remove_key(cls, user: AbstractUser, public_key_id: int) -> bool:
+        """
+        remove a submitted public key that is used to share form keys between users
+        :param user: the user calling the service
+        :param public_key_id: id the of the public key that should be activated
+        :return: the activated key object
+        """
+        if not user.has_perm(CanActivateEncryptionKeyPermission):
+            raise PermissionError("You are not allowed to activate this form key")
+        public_key = EncryptionKey.objects.get(id=public_key_id)
+
+        public_key.delete()
+
+        return True

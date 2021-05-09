@@ -1,6 +1,6 @@
 from serious_django_permissions.permissions import Permission
 
-from forms.models import FormSubmission, EncryptionKey, Form
+from forms.models import FormSubmission, Form
 
 
 class CanRetrieveFormSubmissionsPermission(Permission):
@@ -10,32 +10,6 @@ class CanRetrieveFormSubmissionsPermission(Permission):
     @staticmethod
     def has_permission(context):
         return context.user.has_perm(CanRetrieveFormSubmissionsPermission)
-
-    @staticmethod
-    def has_object_permission(context, obj):
-        return True
-
-
-class CanAddEncryptionKeyPermission(Permission):
-    model = EncryptionKey
-    description = "can add a new encryption key"
-
-    @staticmethod
-    def has_permission(context):
-        return context.user.has_perm(CanAddEncryptionKeyPermission)
-
-    @staticmethod
-    def has_object_permission(context, obj):
-        return True
-
-
-class CanActivateEncryptionKeyPermission(Permission):
-    model = EncryptionKey
-    description = "can activate a new encryption key"
-
-    @staticmethod
-    def has_permission(context):
-        return context.user.has_perm(CanActivateEncryptionKeyPermission)
 
     @staticmethod
     def has_object_permission(context, obj):

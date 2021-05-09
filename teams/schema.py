@@ -16,12 +16,21 @@ from graphql_relay.node.node import from_global_id
 from graphene_django.filter import DjangoFilterConnectionField
 
 from forms.permissions import CanEditFormPermission
+from forms.services.forms import FormService
 from teams.permissions import (
     CanCreateTeamPermission,
+    CanAddEncryptionKeyPermission,
+    CanActivateEncryptionKeyPermission,
 )
-from teams.models import Team, TeamMembership, TeamRoleChoices, TeamCertificate
+from teams.models import (
+    Team,
+    TeamMembership,
+    TeamRoleChoices,
+    TeamCertificate,
+    EncryptionKey,
+)
 
-from teams.services import TeamService, TeamMembershipService
+from teams.services import TeamService, TeamMembershipService, EncryptionKeyService
 
 from serious_django_graphene import (
     get_user_from_info,
@@ -82,11 +91,45 @@ class InternalTeamMembershipNode(DjangoObjectType):
         return item
 
 
+class EncryptionKeyNode(DjangoObjectType):
+    fingerprint = graphene.Field(graphene.String)
+
+    class Meta:
+        model = EncryptionKey
+
+    @classmethod
+    def get_queryset(cls, queryset, info):
+        return queryset.filter(active=True)
+
+
+class InactiveEncryptionKeyNode(PermissionDjangoObjectType):
+    fingerprint = graphene.Field(graphene.String)
+
+    class Meta:
+        model = EncryptionKey
+        filter_fields = ["id"]
+        interfaces = (relay.Node,)
+
+
 class Query(graphene.ObjectType):
     # get a list of available teams
     all_teams = DjangoFilterConnectionField(InternalTeamNode)
     # get a list of available teams
     team = relay.Node.Field(InternalTeamNode)
+
+    all_inactive_encryption_keys = DjangoFilterConnectionField(
+        InactiveEncryptionKeyNode
+    )
+
+    # get public keys for form
+    public_keys_for_form = graphene.List(
+        EncryptionKeyNode, form_id=graphene.ID(required=True)
+    )
+
+    def resolve_public_keys_for_form(self, info, form_id):
+        return FormService.retrieve_public_keys_for_form(
+            int(from_global_id(form_id)[1])
+        )
 
     @permissions_checker([IsAuthenticated])
     def resolve_all_teams_(self, info, **kwargs):
@@ -206,7 +249,61 @@ class RemoveTeamMember(FailableMutation):
         return RemoveTeamMember(success=True)
 
 
+class SubmitEncryptionKey(FailableMutation):
+    encryption_key = graphene.Field(InactiveEncryptionKeyNode)
+
+    class Arguments:
+        public_key = graphene.String(required=True)
+
+    @permissions_checker([IsAuthenticated, CanAddEncryptionKeyPermission])
+    def mutate(self, info, public_key):
+        user = get_user_from_info(info)
+        try:
+            result = EncryptionKeyService.add_key(user, public_key)
+        except EncryptionKeyService.exceptions as e:
+            raise MutationExecutionException(str(e))
+        return SubmitEncryptionKey(success=True, encryption_key=result)
+
+
+class ActivateEncryptionKey(FailableMutation):
+    encryption_key = graphene.Field(InactiveEncryptionKeyNode)
+
+    class Arguments:
+        public_key_id = graphene.ID(required=True)
+
+    @permissions_checker([IsAuthenticated, CanActivateEncryptionKeyPermission])
+    def mutate(self, info, public_key_id):
+        user = get_user_from_info(info)
+        try:
+            result = EncryptionKeyService.activate_key(
+                user, int(from_global_id(public_key_id)[1])
+            )
+        except EncryptionKeyService.exceptions as e:
+            raise MutationExecutionException(str(e))
+        return ActivateEncryptionKey(success=True, encryption_key=result)
+
+
+class RemoveEncryptionKey(FailableMutation):
+    class Arguments:
+        public_key_id = graphene.ID(required=True)
+
+    @permissions_checker([IsAuthenticated, CanActivateEncryptionKeyPermission])
+    def mutate(self, info, public_key_id):
+        user = get_user_from_info(info)
+        try:
+            result = EncryptionKeyService.remove_key(
+                user, int(from_global_id(public_key_id)[1])
+            )
+        except EncryptionKeyService.exceptions as e:
+            raise MutationExecutionException(str(e))
+        return RemoveEncryptionKey(success=True)
+
+
 class Mutation(graphene.ObjectType):
+    submit_encryption_key = SubmitEncryptionKey.Field()
+    activate_encryption_key = ActivateEncryptionKey.Field()
+    remove_encryption_key = RemoveEncryptionKey.Field()
+
     create_team = CreateTeam.Field()
     add_csr_for_team = AddCSRForTeam.Field()
     add_team_member = AddTeamMember.Field()

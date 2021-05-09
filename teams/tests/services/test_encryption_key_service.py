@@ -8,19 +8,16 @@ from django.urls import reverse
 from django.conf import settings
 from serious_django_permissions.management.commands import create_groups
 
-from forms.models import Form, EncryptionKey, SignatureKey
+from forms.management.commands import create_signature_key
+from forms.models import Form, SignatureKey
 from forms.services.forms import (
     FormService,
-    FormServiceException,
-    FormReceiverService,
-    EncryptionKeyService,
-    FormSchemaService,
 )
-from teams.services import TeamService, TeamMembershipService
+from forms.tests.utils import generate_test_keypair
+from teams.models import EncryptionKey
+from teams.services import TeamService, TeamMembershipService, EncryptionKeyService
 from settings.default_groups import AdministrativeStaffGroup, InstanceAdminGroup
 from teams.tests.services.mock import create_mock_cert
-from ...management.commands import create_signature_key
-from ..utils import generate_test_keypair
 
 
 class EncryptionKeyServiceTest(TestCase):

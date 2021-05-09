@@ -14,7 +14,6 @@ class CreateTeamForm(forms.ModelForm):
         model = Team
         fields = [
             "name",
-            "slug",
         ]
 
 
@@ -27,7 +26,7 @@ class UpdateTeamForm(forms.ModelForm):
 class CreateTeamMembershipForm(forms.ModelForm):
     class Meta:
         model = TeamMembership
-        fields = ["user", "team", "role", "key"]
+        fields = ["user", "team", "role"]
 
 
 class UpdateTeamMembershipForm(forms.ModelForm):
@@ -35,5 +34,4 @@ class UpdateTeamMembershipForm(forms.ModelForm):
         model = TeamMembership
         fields = [
             "role",
-            "key",
         ]
