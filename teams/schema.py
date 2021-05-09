@@ -160,7 +160,7 @@ class CreateTeam(FailableMutation):
     def mutate(self, info, name, keys):
         user = get_user_from_info(info)
         c_keys = {}
-        for i, key in keys.items():
+        for key in keys:
             c_keys[int(from_global_id(key["encryption_key_id"])[1])] = key["key"]
         try:
             result = TeamService.create(user, name=name, keys=c_keys)
@@ -208,7 +208,7 @@ class AddTeamMember(FailableMutation):
     def mutate(self, info, keys, team_id, invited_user_id, role):
         user = get_user_from_info(info)
         c_keys = {}
-        for i, key in keys.items():
+        for key in keys:
             c_keys[int(from_global_id(key["encryption_key_id"])[1])] = key["key"]
         try:
             result = TeamMembershipService.add_member(
@@ -234,9 +234,6 @@ class UpdateTeamMember(FailableMutation):
     @permissions_checker([IsAuthenticated, CanEditFormPermission])
     def mutate(self, info, team_id, affected_user_id, role):
         user = get_user_from_info(info)
-        c_keys = {}
-        for i, key in keys.items():
-            c_keys[int(from_global_id(key["encryption_key_id"])[1])] = key["key"]
         try:
             result = TeamMembershipService.update_member(
                 user,
@@ -300,7 +297,7 @@ class ActivateEncryptionKey(FailableMutation):
     @permissions_checker({IsAuthenticated, CanActivateEncryptionKeyPermission})
     def mutate(self, info, public_key_id, keys):
         c_keys = {}
-        for i, key in keys.items():
+        for key in keys:
             c_keys[int(from_global_id(key["membership_id"])[1])] = key["key"]
         user = get_user_from_info(info)
         try:
